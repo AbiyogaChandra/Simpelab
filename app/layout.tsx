@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Peminjaman Lab",
+  title: "Simpelab",
   description: "Sistem Peminjaman Laboratorium",
   icons: {
     icon: '/logo.ico',
