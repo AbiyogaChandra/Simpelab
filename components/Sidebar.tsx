@@ -57,7 +57,7 @@ export default function Sidebar() {
         },
         {
             name: 'Peminjaman',
-            path: '/',
+            path: '/data-peminjaman',
             icon: (active: boolean) => (
                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M14 2H6C4.89543 2 4 2.89543 4 4V16C4 17.1046 4.89543 18 6 18H14C15.1046 18 16 17.1046 16 16V4C16 2.89543 15.1046 2 14 2Z" stroke={active ? "#333333" : "#666666"} strokeWidth="1.5" />
