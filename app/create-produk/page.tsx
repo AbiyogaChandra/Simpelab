@@ -21,9 +21,51 @@ export default function CreateProdukPage() {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission
+
+    if (!formData.kategoriProduk) {
+      alert('Mohon pilih kategori produk');
+      return;
+    }
+
+    // Validate Kode Produk (Alphanumeric only)
+    if (!/^[a-zA-Z0-9]+$/.test(formData.kodeProduk)) {
+      alert('Kode Produk hanya boleh berisi huruf dan angka (tanpa spasi atau karakter spesial)');
+      return;
+    }
+
+    // Map form data to API schema
+    const apiData = {
+      kategori: formData.kategoriProduk === 'aset' ? 'ASET' : 'HP',
+      nama: formData.namaProduk,
+      kode: formData.kodeProduk,
+      merk: formData.merk,
+      model: formData.tipeModel,
+      spesifikasi: formData.spesifikasi,
+      kuantitas: 0 // Default per schema/logic
+    };
+
+    try {
+      const response = await fetch('/api/produk', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(apiData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create product');
+      }
+
+      alert('Produk berhasil dibuat!');
+      handleReset();
+    } catch (error) {
+      console.error('Error creating product:', error);
+      alert('Gagal membuat produk. Silakan coba lagi.');
+    }
   };
 
   const handleReset = () => {
@@ -138,8 +180,8 @@ export default function CreateProdukPage() {
                   }}
                 >
                   <option value="">Opsi</option>
-                  <option value="asset">Asset</option>
-                  <option value="habis-pakai">Habis Pakai</option>
+                  <option value="aset">Aset</option>
+                  <option value="hp">Habis Pakai</option>
                 </select>
                 <div style={{
                   position: 'absolute',

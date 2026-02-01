@@ -1,19 +1,104 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Sidebar from '@/components/Sidebar';
+
+// Interfaces based on Prisma schema and API response
+interface Produk {
+  id: number;
+  kategori: string;
+  nama: string;
+  kode: string;
+  merk: string;
+  model: string;
+  spesifikasi: string;
+  kuantitas: number;
+}
+
+interface DetailProduk {
+  id: number;
+  id_produk: number;
+  id_lokasi: number;
+  status: string;
+  kondisi: string;
+  kode_seri: string | null;
+  kode_scan: string | null;
+  produk: Produk;
+  lokasi: {
+    id: number;
+    nama_ruang: string;
+    keterangan: string;
+  };
+}
 
 export default function DataInventarisPage() {
   const [kategori, setKategori] = useState('');
   const [search, setSearch] = useState('');
-  const [activeTab, setActiveTab] = useState('produk');
-  const [inventoryData, setInventoryData] = useState<any[]>([]); // Default empty, akan diisi setelah fetch
+  const [activeTab, setActiveTab] = useState<'produk' | 'barang'>('produk');
+  const [inventoryData, setInventoryData] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // TODO: Fetch data dari API
-  // useEffect(() => {
-  //   fetchInventoryData().then(data => setInventoryData(data));
-  // }, []);
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const endpoint = activeTab === 'produk' ? '/api/produk' : '/api/detail-produk';
+        const response = await fetch(endpoint);
+        if (!response.ok) throw new Error('Failed to fetch data');
+
+        const data = await response.json();
+        setInventoryData(data);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        setInventoryData([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [activeTab]);
+
+  // Filter data client-side based on search and kategori
+  const filteredData = inventoryData.filter((item) => {
+    const searchTerm = search.toLowerCase();
+    const categoryFilter = kategori.toLowerCase();
+
+    if (activeTab === 'produk') {
+      const p = item as Produk;
+      if (!p) return false;
+
+      const pName = p.nama?.toLowerCase() || '';
+      const pKode = p.kode?.toLowerCase() || '';
+      const pMerk = p.merk?.toLowerCase() || '';
+      const pKategori = p.kategori?.toLowerCase() || '';
+
+      const matchesSearch =
+        pName.includes(searchTerm) ||
+        pKode.includes(searchTerm) ||
+        pMerk.includes(searchTerm);
+
+      const matchesCategory = !categoryFilter || pKategori === categoryFilter;
+      return matchesSearch && matchesCategory;
+    } else {
+      const d = item as DetailProduk;
+      if (!d) return false;
+
+      const pName = d.produk?.nama?.toLowerCase() || '';
+      const serial = d.kode_seri?.toLowerCase() || '';
+      const scan = d.kode_scan?.toLowerCase() || '';
+
+      const matchesSearch =
+        pName.includes(searchTerm) ||
+        serial.includes(searchTerm) ||
+        scan.includes(searchTerm);
+
+      const dCategory = d.produk?.kategori?.toLowerCase() || '';
+      const matchesCategory = !categoryFilter || dCategory === categoryFilter;
+      return matchesSearch && matchesCategory;
+    }
+  });
 
   return (
     <div style={{
@@ -65,7 +150,7 @@ export default function DataInventarisPage() {
             gap: '8px',
             borderBottom: '2px solid #F5F5F5'
           }}>
-            {/* Produk Tab - Active */}
+            {/* Produk Tab */}
             <button
               onClick={() => setActiveTab('produk')}
               style={{
@@ -157,8 +242,8 @@ export default function DataInventarisPage() {
                   }}
                 >
                   <option value="">Semua Kategori</option>
-                  <option value="asset">Asset</option>
-                  <option value="habis-pakai">Habis Pakai</option>
+                  <option value="aset">Aset</option>
+                  <option value="hp">Habis Pakai</option>
                 </select>
                 <div style={{
                   position: 'absolute',
@@ -206,7 +291,7 @@ export default function DataInventarisPage() {
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Cari nama, kode, atau merk..."
+                  placeholder={activeTab === 'produk' ? "Cari nama, kode, atau merk..." : "Cari nama barang atau kode seri..."}
                   style={{
                     width: '100%',
                     padding: '12px 16px',
@@ -237,7 +322,20 @@ export default function DataInventarisPage() {
         </div>
 
         {/* Conditional Rendering: Table or Empty State */}
-        {inventoryData.length > 0 ? (
+        {loading ? (
+          <div style={{
+            background: '#FFFFFF',
+            borderRadius: '12px',
+            padding: '80px 32px',
+            boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            minHeight: '400px'
+          }}>
+            <p>Loading...</p>
+          </div>
+        ) : filteredData.length > 0 ? (
           /* Table */
           <div style={{
             background: '#FFFFFF',
@@ -255,198 +353,114 @@ export default function DataInventarisPage() {
                     background: '#F9F9F9',
                     borderBottom: '1px solid #E0E0E0'
                   }}>
-                    <th style={{
-                      padding: '16px',
-                      textAlign: 'left',
-                      color: '#333333',
-                      fontSize: '14px',
-                      fontWeight: 600
-                    }}>No</th>
-                    <th style={{
-                      padding: '16px',
-                      textAlign: 'left',
-                      color: '#333333',
-                      fontSize: '14px',
-                      fontWeight: 600
-                    }}>Kategori</th>
-                    <th style={{
-                      padding: '16px',
-                      textAlign: 'left',
-                      color: '#333333',
-                      fontSize: '14px',
-                      fontWeight: 600
-                    }}>Nama Barang</th>
-                    <th style={{
-                      padding: '16px',
-                      textAlign: 'left',
-                      color: '#333333',
-                      fontSize: '14px',
-                      fontWeight: 600
-                    }}>Kode Produk</th>
-                    <th style={{
-                      padding: '16px',
-                      textAlign: 'left',
-                      color: '#333333',
-                      fontSize: '14px',
-                      fontWeight: 600
-                    }}>Merk</th>
-                    <th style={{
-                      padding: '16px',
-                      textAlign: 'left',
-                      color: '#333333',
-                      fontSize: '14px',
-                      fontWeight: 600
-                    }}>Tipe/Model</th>
-                    <th style={{
-                      padding: '16px',
-                      textAlign: 'left',
-                      color: '#333333',
-                      fontSize: '14px',
-                      fontWeight: 600
-                    }}>Stok</th>
-                    <th style={{
-                      padding: '16px',
-                      textAlign: 'left',
-                      color: '#333333',
-                      fontSize: '14px',
-                      fontWeight: 600
-                    }}>Jumlah Barang</th>
-                    <th style={{
-                      padding: '16px',
-                      textAlign: 'left',
-                      color: '#333333',
-                      fontSize: '14px',
-                      fontWeight: 600
-                    }}>Aksi</th>
+                    <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>No</th>
+                    {activeTab === 'produk' ? (
+                      <>
+                        <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Kategori</th>
+                        <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Nama Produk</th>
+                        <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Kode Produk</th>
+                        <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Merk</th>
+                        <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Tipe/Model</th>
+                        <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Kuantitas</th>
+                      </>
+                    ) : (
+                      <>
+                        <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Kategori</th>
+                        <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Nama Produk</th>
+                        <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Kode Seri</th>
+                        <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Lokasi</th>
+                        <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Status</th>
+                      </>
+                    )}
+                    <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {inventoryData.map((item) => (
-                    <tr key={item.no} style={{
-                      borderBottom: '1px solid #F0F0F0'
-                    }}>
-                      <td style={{
-                        padding: '16px',
-                        color: '#333333',
-                        fontSize: '14px'
-                      }}>{item.no}</td>
-                      <td style={{
-                        padding: '16px'
-                      }}>
-                        <span style={{
-                          display: 'inline-block',
-                          padding: '4px 12px',
-                          borderRadius: '12px',
-                          background: '#F5F5F5',
-                          color: '#333333',
-                          fontSize: '12px',
-                          fontWeight: 500
-                        }}>
-                          {item.kategori}
-                        </span>
-                      </td>
-                      <td style={{
-                        padding: '16px',
-                        color: '#333333',
-                        fontSize: '14px'
-                      }}>{item.namaBarang}</td>
-                      <td style={{
-                        padding: '16px',
-                        color: '#333333',
-                        fontSize: '14px'
-                      }}>{item.kodeProduk}</td>
-                      <td style={{
-                        padding: '16px',
-                        color: '#333333',
-                        fontSize: '14px'
-                      }}>{item.merk}</td>
-                      <td style={{
-                        padding: '16px',
-                        color: '#333333',
-                        fontSize: '14px'
-                      }}>{item.tipeModel}</td>
-                      <td style={{
-                        padding: '16px'
-                      }}>
-                        <span style={{
-                          display: 'inline-block',
-                          padding: '4px 12px',
-                          borderRadius: '12px',
-                          background: '#D1FAE5',
-                          color: '#065F46',
-                          fontSize: '12px',
-                          fontWeight: 500
-                        }}>
-                          {item.stok}
-                        </span>
-                      </td>
-                      <td style={{
-                        padding: '16px'
-                      }}>
-                        <span style={{
-                          display: 'inline-block',
-                          padding: '4px 12px',
-                          borderRadius: '12px',
-                          background: '#FED7AA',
-                          color: '#92400E',
-                          fontSize: '12px',
-                          fontWeight: 500
-                        }}>
-                          {item.jumlahBarang} Items
-                        </span>
-                      </td>
-                      <td style={{
-                        padding: '16px'
-                      }}>
-                        <div style={{
-                          display: 'flex',
-                          gap: '8px',
-                          alignItems: 'center'
-                        }}>
-                          <button style={{
-                            padding: '6px',
-                            border: 'none',
-                            background: 'transparent',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                          }}>
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M8 3C4.66667 3 2 5.66667 2 9C2 12.3333 4.66667 15 8 15C11.3333 15 14 12.3333 14 9C14 5.66667 11.3333 3 8 3Z" stroke="#666666" strokeWidth="1.5" />
-                              <circle cx="8" cy="9" r="2" stroke="#666666" strokeWidth="1.5" />
-                            </svg>
-                          </button>
-                          <button style={{
-                            padding: '6px',
-                            border: 'none',
-                            background: 'transparent',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                          }}>
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M11.3333 2.00004C11.5084 1.82493 11.7163 1.68605 11.9451 1.59128C12.1739 1.49651 12.4187 1.44775 12.6667 1.44775C12.9146 1.44775 13.1594 1.49651 13.3882 1.59128C13.617 1.68605 13.8249 1.82493 14 2.00004C14.1751 2.17515 14.314 2.38305 14.4088 2.61185C14.5035 2.84065 14.5523 3.08547 14.5523 3.33337C14.5523 3.58128 14.5035 3.8261 14.4088 4.0549C14.314 4.2837 14.1751 4.4916 14 4.66671L5.00001 13.6667L1.33334 14.6667L2.33334 11L11.3333 2.00004Z" stroke="#666666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
-                          </button>
-                          <button style={{
-                            padding: '6px',
-                            border: 'none',
-                            background: 'transparent',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                          }}>
-                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                              <path d="M2 4H14M6 4V2C6 1.44772 6.44772 1 7 1H9C9.55228 1 10 1.44772 10 2V4M13 4V14C13 14.5523 12.5523 15 12 15H4C3.44772 15 3 14.5523 3 14V4H13Z" stroke="#DC2626" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {filteredData.map((item, index) => {
+                    // Render for Produk
+                    if (activeTab === 'produk') {
+                      const p = item as Produk;
+                      return (
+                        <tr key={p.id} style={{ borderBottom: '1px solid #F0F0F0' }}>
+                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{index + 1}</td>
+                          <td style={{ padding: '16px' }}>
+                            <span style={{
+                              display: 'inline-block',
+                              padding: '4px 12px',
+                              borderRadius: '12px',
+                              background: '#F5F5F5',
+                              color: '#333333',
+                              fontSize: '12px',
+                              fontWeight: 500
+                            }}>
+                              {p.kategori === 'ASET' ? 'Aset' : p.kategori === 'HP' ? 'Habis Pakai' : p.kategori}
+                            </span>
+                          </td>
+                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{p.nama}</td>
+                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{p.kode}</td>
+                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{p.merk}</td>
+                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{p.model}</td>
+                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{p.kuantitas}</td>
+                          <td style={{ padding: '16px' }}>
+                            {/* Actions */}
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                              <button style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}>
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M8 3C4.66667 3 2 5.66667 2 9C2 12.3333 4.66667 15 8 15C11.3333 15 14 12.3333 14 9C14 5.66667 11.3333 3 8 3Z" stroke="#666666" strokeWidth="1.5" />
+                                  <circle cx="8" cy="9" r="2" stroke="#666666" strokeWidth="1.5" />
+                                </svg>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    } else {
+                      // Render for Barang (DetailProduk)
+                      const d = item as DetailProduk;
+                      return (
+                        <tr key={d.id} style={{ borderBottom: '1px solid #F0F0F0' }}>
+                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{index + 1}</td>
+                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{(d.produk?.kategori === 'ASET' ? 'Aset' : d.produk?.kategori === 'HP' ? 'Habis Pakai' : d.produk?.kategori) || '-'}</td>
+                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{d.produk?.nama || '-'}</td>
+                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{d.kode_seri || '-'}</td>
+                          {/* <td style={{ padding: '16px' }}>
+                            <span style={{
+                              color: d.kondisi === 'BAIK' ? '#047857' : '#DC2626',
+                              fontWeight: 500,
+                              fontSize: '14px'
+                            }}>
+                              {d.kondisi || '-'}
+                            </span>
+                          </td> */}
+                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{d.lokasi?.nama_ruang || ''} - {d.lokasi?.keterangan || ''}</td>
+                          <td style={{ padding: '16px' }}>
+                            <span style={{
+                              display: 'inline-block',
+                              padding: '4px 12px',
+                              borderRadius: '12px',
+                              background: d.status === 'TERSEDIA' ? '#D1FAE5' : '#FEE2E2',
+                              color: d.status === 'TERSEDIA' ? '#065F46' : '#991B1B',
+                              fontSize: '12px',
+                              fontWeight: 500
+                            }}>
+                              {d.status || '-'}
+                            </span>
+                          </td>
+                          <td style={{ padding: '16px' }}>
+                            {/* Actions */}
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                              <button style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}>
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M8 3C4.66667 3 2 5.66667 2 9C2 12.3333 4.66667 15 8 15C11.3333 15 14 12.3333 14 9C14 5.66667 11.3333 3 8 3Z" stroke="#666666" strokeWidth="1.5" />
+                                  <circle cx="8" cy="9" r="2" stroke="#666666" strokeWidth="1.5" />
+                                </svg>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    }
+                  })}
                 </tbody>
               </table>
             </div>
@@ -459,15 +473,8 @@ export default function DataInventarisPage() {
               justifyContent: 'space-between',
               alignItems: 'center'
             }}>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px'
-              }}>
-                <span style={{
-                  color: '#666666',
-                  fontSize: '14px'
-                }}>Show</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <span style={{ color: '#666666', fontSize: '14px' }}>Show</span>
                 <select style={{
                   padding: '6px 12px',
                   border: '1px solid #E0E0E0',
@@ -479,16 +486,9 @@ export default function DataInventarisPage() {
                   <option value="10">10</option>
                   <option value="20">20</option>
                 </select>
-                <span style={{
-                  color: '#666666',
-                  fontSize: '14px'
-                }}>Results: 1-{inventoryData.length} of {inventoryData.length}</span>
+                <span style={{ color: '#666666', fontSize: '14px' }}>Results: 1-{filteredData.length} of {filteredData.length}</span>
               </div>
-              <div style={{
-                display: 'flex',
-                gap: '8px',
-                alignItems: 'center'
-              }}>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                 <button style={{
                   padding: '8px 16px',
                   border: '1px solid #E0E0E0',
@@ -542,10 +542,7 @@ export default function DataInventarisPage() {
             minHeight: '400px'
           }}>
             {/* Box Icon */}
-            <div style={{
-              marginBottom: '24px',
-              opacity: 0.5
-            }}>
+            <div style={{ marginBottom: '24px', opacity: 0.5 }}>
               <svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M20 30L60 10L100 30M20 30V90C20 92.2091 21.7909 94 24 94H96C98.2091 94 100 92.2091 100 90V30M20 30L60 50L100 30" stroke="#666666" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
                 <path d="M60 50V94" stroke="#666666" strokeWidth="3" strokeLinecap="round" />
