@@ -6,4 +6,4 @@ No,Nama Atribut,Tipe Atribut,Ukuran Atribut,Keterangan
 4,status,enum,"{'TERSEDIA', 'DIPINJAM'}",
 5,kondisi,enum,"{'BAIK', 'RUSAK'}",
 6,kode_seri,varchar,32,BOLEH NULL
-7,kode_scan,varchar,64,BOLEH NULL
+7,kode_scan,varchar,65,BOLEH NULL
