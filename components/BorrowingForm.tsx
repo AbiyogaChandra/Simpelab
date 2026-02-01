@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import illustration from '@/app/illustration.png';
+import Image from 'next/image';
 
 export default function BorrowingForm() {
     const [formData, setFormData] = useState({
@@ -30,22 +30,21 @@ export default function BorrowingForm() {
             {/* Left Panel - Dark Teal */}
             <div style={{
                 width: '50%',
-                background: '#20B2AA',
+                background: '#2F516A',
                 position: 'relative',
                 overflow: 'hidden'
             }}>
                 {/* Illustration Image - Full Background */}
-                <img
-                    src={typeof illustration === 'string' ? illustration : illustration.src}
+                <Image
+                    src="/illustration.webp"
                     alt="Lab Illustration"
+                    fill
                     style={{
                         position: 'absolute',
                         top: 0,
                         left: 0,
-                        width: '100%',
-                        height: '100%',
                         objectFit: 'cover',
-                        objectPosition: 'center',
+                        objectPosition: 'bottom',
                         display: 'block'
                     }}
                 />
@@ -64,14 +63,14 @@ export default function BorrowingForm() {
                         <div style={{
                             display: 'inline-flex',
                             alignItems: 'center',
-                            gap: '12px',
+                            gap: '6px',
                             background: '#FFFFFF',
-                            borderRadius: '12px',
-                            padding: '12px 20px'
+                            borderRadius: '24px',
+                            padding: '4px 8px'
                         }}>
-                            <img src="/logo.png" alt="Simpelab Logo" style={{ width: '32px', height: '32px' }} />
+                            <Image src="/logo.webp" alt="Simpelab Logo" width={48} height={48} />
                             <span style={{
-                                color: '#20B2AA',
+                                color: '#2F516A',
                                 fontSize: '20px',
                                 fontWeight: 700,
                                 fontFamily: 'Outfit, sans-serif'
