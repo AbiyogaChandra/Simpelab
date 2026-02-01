@@ -1,0 +1,8 @@
+﻿tb_sesi,,,,
+No,Nama Atribut,Tipe Atribut,Ukuran Atribut,Keterangan
+1,id,uuid,36,"PRIMARY KEY, RANDOM UUID"
+2,id_admin,uuid,36,FOREIGN KEY (tb_admin)
+3,token,varchar,255,
+4,waktu_pembuatan,timestamp,timestamp,
+5,waktu_akses_terakhir,timestamp,timestamp,
+6,waktu_kadaluarsa,timestamp,timestamp,
