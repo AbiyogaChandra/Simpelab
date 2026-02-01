@@ -13,9 +13,13 @@ const detailProdukSchema = z.object({
     kode_scan: z.string().optional().or(z.literal("")),
 });
 
-export async function GET() {
+export async function GET(request: Request) {
     try {
+        const { searchParams } = new URL(request.url);
+        const id_produkParam = searchParams.get('id_produk');
+
         const detailProduk = await prisma.detailProduk.findMany({
+            where: id_produkParam ? { id_produk: parseInt(id_produkParam) } : undefined,
             include: {
                 produk: true,
                 lokasi: true,
