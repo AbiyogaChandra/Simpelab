@@ -18,61 +18,60 @@ export default function Sidebar() {
             name: 'Dashboard',
             path: '/dashboard',
             icon: (active: boolean) => (
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M2.5 10L10 2.5L17.5 10M10 17.5V2.5" stroke={active ? "#333333" : "#666666"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
+                <iconify-icon
+                    icon="typcn:home"
+                    height="24"
+                />
             )
         },
         {
             name: 'Create Produk',
             path: '/create-produk',
             icon: (active: boolean) => (
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect x="4" y="4" width="12" height="12" rx="2" stroke={active ? "#333333" : "#666666"} strokeWidth="1.5" />
-                    <path d="M8 8H12M8 12H12" stroke={active ? "#333333" : "#666666"} strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
+                <iconify-icon
+                    icon="gridicons:product"
+                    height="24"
+                />
             )
         },
         {
             name: 'Create Barang',
             path: '/create-barang',
             icon: (active: boolean) => (
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M4 6L10 2L16 6M4 6V16C4 16.5523 4.44772 17 5 17H15C15.5523 17 16 16.5523 16 16V6M4 6L10 10L16 6" stroke={active ? "#333333" : "#666666"} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M10 10V18" stroke={active ? "#333333" : "#666666"} strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
+                <iconify-icon
+                    icon="pajamas:work-item-maintenance"
+                    height="24"
+                />
             )
         },
         {
             name: 'Data Inventaris',
             path: '/data-inventaris',
             icon: (active: boolean) => (
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="10" cy="5" r="3" stroke={active ? "#333333" : "#666666"} strokeWidth="1.5" />
-                    <circle cx="5" cy="12" r="2" stroke={active ? "#333333" : "#666666"} strokeWidth="1.5" />
-                    <circle cx="15" cy="12" r="2" stroke={active ? "#333333" : "#666666"} strokeWidth="1.5" />
-                    <path d="M10 8V15M5 14L10 15L15 14" stroke={active ? "#333333" : "#666666"} strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
+                <iconify-icon
+                    icon="bxs:data"
+                    height="24"
+                />
             )
         },
         {
             name: 'Peminjaman',
             path: '/data-peminjaman',
             icon: (active: boolean) => (
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M14 2H6C4.89543 2 4 2.89543 4 4V16C4 17.1046 4.89543 18 6 18H14C15.1046 18 16 17.1046 16 16V4C16 2.89543 15.1046 2 14 2Z" stroke={active ? "#333333" : "#666666"} strokeWidth="1.5" />
-                    <path d="M6 6H14M6 10H14M6 14H10" stroke={active ? "#333333" : "#666666"} strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
+                <iconify-icon
+                    icon="icon-park-solid:transaction"
+                    height="24"
+                />
             )
         },
         {
             name: 'Aktifitas',
             path: '/log-perubahan',
             icon: (active: boolean) => (
-                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="10" cy="10" r="8" stroke={active ? "#333333" : "#666666"} strokeWidth="1.5" />
-                    <path d="M10 6V10L13 13" stroke={active ? "#333333" : "#666666"} strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
+                <iconify-icon
+                    icon="nrk:live-activity"
+                    height="24"
+                />
             )
         }
     ];
@@ -96,12 +95,12 @@ export default function Sidebar() {
                     return (
                         <Link key={item.path} href={item.path} className="no-underline">
                             <div
-                                className={`flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer ${active ? 'bg-[#F5F5F5]' : ''
+                                className={`flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer ${active ? 'text-[#2F516A] bg-[#E5F1F1]' : 'text-[#B5B4C9]'
                                     }`}
                             >
                                 {item.icon(active)}
                                 <span
-                                    className={`text-base ${active ? 'text-[#333333] font-medium' : 'text-[#666666] font-normal'
+                                    className={`text-base
                                         }`}
                                 >
                                     {item.name}
