@@ -1,0 +1,5 @@
+﻿tb_admin,,,,
+No,Nama Atribut,Tipe Atribut,Ukuran Atribut,Keterangan
+1,id,uuid,36,"PRIMARY KEY, RANDOM UUID"
+2,username,varchar,32,
+3,password,varchar,255,

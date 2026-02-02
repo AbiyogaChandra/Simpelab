@@ -1,0 +1,5 @@
+﻿tb_lokasi,,,,
+No,Nama Atribut,Tipe Atribut,Ukuran Atribut,Keterangan
+1,id,int,4 bytes,"PRIMARY KEY, AUTO INCREMENT"
+2,nama_ruang,varchar,30,
+3,keterangan,varchar,50,

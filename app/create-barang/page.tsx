@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Sidebar from '@/components/Sidebar';
 
 export default function CreateBarangPage() {
   const [formData, setFormData] = useState({
@@ -9,7 +10,209 @@ export default function CreateBarangPage() {
     nomorSeri: '',
     tanggalMasuk: '',
     letak: '',
+    kondisi: 'BAIK',
   });
+
+  const [produkList, setProdukList] = useState<any[]>([]);
+  const [lokasiList, setLokasiList] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [produkRes, lokasiRes] = await Promise.all([
+          fetch('/api/produk'),
+          fetch('/api/lokasi')
+        ]);
+
+        const produkData = await produkRes.json();
+        const lokasiData = await lokasiRes.json();
+
+        setProdukList(produkData);
+        setLokasiList(lokasiData);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Autocomplete state for Produk
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showDropdown, setShowDropdown] = useState(false);
+
+  // Autocomplete state for Lokasi
+  const [lokasiSearchQuery, setLokasiSearchQuery] = useState('');
+  const [showLokasiDropdown, setShowLokasiDropdown] = useState(false);
+  const [selectedRuang, setSelectedRuang] = useState<string | null>(null);
+  const [isGeneratingSerial, setIsGeneratingSerial] = useState(false);
+
+  // Filter products based on search
+  const filteredProduk = produkList.filter(produk =>
+    produk.nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    produk.kode.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Filter lokasi based on state (Ruang or Keterangan)
+  const filteredLokasi = (() => {
+    if (!selectedRuang) {
+      // Phase 1: Filter unique Ruang
+      const uniqueRuangs = Array.from(new Set(lokasiList.map(l => l.nama_ruang)));
+      return uniqueRuangs
+        .filter(ruang => ruang.toLowerCase().includes(lokasiSearchQuery.toLowerCase()))
+        .map(ruang => ({ type: 'ruang', value: ruang }));
+    } else {
+      // Phase 2: Filter Keterangan within selected Ruang
+      return lokasiList
+        .filter(l => l.nama_ruang === selectedRuang)
+        .filter(l => l.keterangan.toLowerCase().includes(lokasiSearchQuery.toLowerCase()))
+        .map(l => ({ type: 'lokasi', value: l }));
+    }
+  })();
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    setShowDropdown(true);
+    // Reset selected product when typing
+    setFormData(prev => ({ ...prev, pilihProduk: '' }));
+  };
+
+  const handleSelectProduk = (produk: any) => {
+    setFormData(prev => ({ ...prev, pilihProduk: produk.id }));
+    setSearchQuery(`${produk.nama} (${produk.kode})`);
+    setShowDropdown(false);
+  };
+
+  const selectedKeterangan = formData.letak ? lokasiList.find(l => l.id === parseInt(formData.letak as unknown as string))?.keterangan : null;
+
+  const handleClearLokasi = () => {
+    setFormData(prev => ({ ...prev, letak: '' }));
+    setLokasiSearchQuery('');
+    setShowLokasiDropdown(true);
+  };
+
+  const handleLokasiSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setLokasiSearchQuery(e.target.value);
+    setShowLokasiDropdown(true);
+    // If we are in Phase 2 (Ruang selected), clearing the text shouldn't reset Ruang, 
+    // unless user explicitly deletes the chip (handled separately).
+    if (selectedRuang) {
+      setFormData(prev => ({ ...prev, letak: '' }));
+    }
+  };
+
+  const handleSelectLokasiItem = async (item: any) => {
+    if (item.type === 'ruang') {
+      setSelectedRuang(item.value);
+      setLokasiSearchQuery(''); // Clear query for next step
+      setShowLokasiDropdown(true);
+    } else if (item.type === 'lokasi') {
+      const lokasi = item.value;
+      setFormData(prev => ({ ...prev, letak: lokasi.id }));
+      setLokasiSearchQuery('');
+      setShowLokasiDropdown(false);
+    } else if (item.type === 'new_ruang') {
+      // Handle creating new Ruang (set as selectedRuang)
+      setSelectedRuang(lokasiSearchQuery);
+      setLokasiSearchQuery('');
+      setShowLokasiDropdown(true);
+    } else if (item.type === 'new_lokasi') {
+      // Handle creating new Location
+      await createNewLocation(selectedRuang!, lokasiSearchQuery);
+      setLokasiSearchQuery(''); // Clear query after creation
+    }
+  };
+
+  const handleGenerateSerial = async () => {
+    if (!formData.pilihProduk) {
+      alert('Mohon pilih produk terlebih dahulu untuk memastikan keunikan kode seri.');
+      return;
+    }
+
+    setIsGeneratingSerial(true);
+    try {
+      const res = await fetch(`/api/detail-produk?id_produk=${formData.pilihProduk}`);
+      if (!res.ok) throw new Error('Failed to fetch existing products');
+
+      const data = await res.json();
+      const existingSerials = new Set(data.map((item: any) => item.kode_seri));
+
+      let candidate = '';
+      let isUnique = false;
+      let attempts = 0;
+
+      // Try to generate a unique serial
+      while (!isUnique && attempts < 10) {
+        // Generate random 8-char string (e.g., A1B2C3D4)
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+        candidate = Array.from({ length: 32 }, () =>
+          chars.charAt(Math.floor(Math.random() * chars.length))
+        ).join('');
+
+        if (!existingSerials.has(candidate)) {
+          isUnique = true;
+        }
+        attempts++;
+      }
+
+      if (isUnique) {
+        setFormData(prev => ({ ...prev, nomorSeri: candidate }));
+      } else {
+        alert('Gagal membuat kode seri unik. Silakan coba lagi.');
+      }
+    } catch (error) {
+      console.error('Error generating serial:', error);
+      alert('Terjadi kesalahan saat generate kode seri.');
+    } finally {
+      setIsGeneratingSerial(false);
+    }
+  };
+
+  const selectedProduct = formData.pilihProduk ? produkList.find(p => p.id === parseInt(formData.pilihProduk)) : null;
+  const isHabisPakai = selectedProduct?.kategori === 'HP';
+
+  const createNewLocation = async (ruang: string, keterangan: string) => {
+    try {
+      const response = await fetch('/api/lokasi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nama_ruang: ruang, keterangan }),
+      });
+
+      if (!response.ok) throw new Error('Failed to create location');
+
+      const newLokasi = await response.json();
+      // Update list
+      setLokasiList(prev => [...prev, newLokasi]);
+      // Select it
+      setFormData(prev => ({ ...prev, letak: newLokasi.id }));
+      setLokasiSearchQuery(newLokasi.keterangan);
+      setShowLokasiDropdown(false);
+    } catch (error) {
+      console.error('Error creating location:', error);
+      alert('Gagal membuat lokasi baru');
+    }
+  };
+
+  const handleClearRuang = () => {
+    setSelectedRuang(null);
+    setLokasiSearchQuery('');
+    setFormData(prev => ({ ...prev, letak: '' }));
+    setShowLokasiDropdown(true);
+  };
+
+  // Close dropdown when clicking outside (simple implementation using blur delay)
+  const handleBlur = () => {
+    // Small delay to allow click event on dropdown items to fire
+    setTimeout(() => setShowDropdown(false), 200);
+  };
+
+  const handleLokasiBlur = () => {
+    setTimeout(() => setShowLokasiDropdown(false), 200);
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({
@@ -18,9 +221,46 @@ export default function CreateBarangPage() {
     });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission
+
+    if (!formData.pilihProduk || !formData.letak) {
+      alert('Mohon pilih produk dan lokasi');
+      return;
+    }
+
+    // ... rest of submit logic
+    const apiData = {
+      id_produk: parseInt(formData.pilihProduk),
+      id_lokasi: parseInt(formData.letak),
+      kode_seri: formData.nomorSeri,
+      status: 'TERSEDIA', // Default
+      kondisi: formData.kondisi,
+      kode_scan: formData.nomorSeri && selectedProduct
+        ? `${selectedProduct.kode}-${formData.nomorSeri}`
+        : '',
+    };
+
+    try {
+      const response = await fetch('/api/detail-produk', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(apiData),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create item');
+      }
+
+      alert('Barang berhasil ditambahkan!');
+      handleReset();
+    } catch (error) {
+      console.error('Error creating item:', error);
+      alert('Gagal menambahkan barang. Silakan coba lagi.');
+    }
   };
 
   const handleReset = () => {
@@ -29,11 +269,15 @@ export default function CreateBarangPage() {
       nomorSeri: '',
       tanggalMasuk: '',
       letak: '',
+      kondisi: 'BAIK',
     });
+    setSearchQuery('');
+    setLokasiSearchQuery('');
   };
 
   const handleGenerateQR = () => {
     // Handle QR code generation
+    alert('Fitur Generate QR Code belum tersedia');
   };
 
   return (
@@ -43,243 +287,7 @@ export default function CreateBarangPage() {
       fontFamily: 'Outfit, sans-serif'
     }}>
       {/* Left Sidebar */}
-      <div style={{
-        position: 'fixed',
-        left: 0,
-        top: 0,
-        width: '280px',
-        background: '#FFFFFF',
-        display: 'flex',
-        flexDirection: 'column',
-        height: '100vh',
-        boxShadow: '2px 0 4px rgba(0, 0, 0, 0.05)',
-        zIndex: 1000,
-        overflowY: 'auto'
-      }}>
-        {/* Header */}
-        <div style={{
-          padding: '24px',
-          borderBottom: '1px solid #E5E5E5'
-        }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <img src="/logo.png" alt="Simpelab Logo" style={{ width: '32px', height: '32px' }} />
-            <span style={{
-              color: '#333333',
-              fontSize: '20px',
-              fontWeight: 700
-            }}>
-              Simpelab
-            </span>
-          </div>
-        </div>
-
-        {/* Navigation Menu */}
-        <div style={{
-          flex: 1,
-          padding: '16px 12px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '4px'
-        }}>
-          {/* Dashboard */}
-          <Link href="/dashboard" style={{ textDecoration: 'none' }}>
-            <div style={{
-              padding: '12px 16px',
-              borderRadius: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              cursor: 'pointer'
-            }}>
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M2.5 10L10 2.5L17.5 10M10 17.5V2.5" stroke="#666666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              </svg>
-              <span style={{
-                color: '#666666',
-                fontSize: '16px',
-                fontWeight: 400
-              }}>
-                Dashboard
-              </span>
-            </div>
-          </Link>
-
-          {/* Create Produk */}
-          <Link href="/create-produk" style={{ textDecoration: 'none' }}>
-            <div style={{
-              padding: '12px 16px',
-              borderRadius: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              cursor: 'pointer'
-            }}>
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="4" y="4" width="12" height="12" rx="2" stroke="#666666" strokeWidth="1.5"/>
-                <path d="M8 8H12M8 12H12" stroke="#666666" strokeWidth="1.5" strokeLinecap="round"/>
-              </svg>
-              <span style={{
-                color: '#666666',
-                fontSize: '16px',
-                fontWeight: 400
-              }}>
-                Create Produk
-              </span>
-            </div>
-          </Link>
-
-          {/* Create Barang - Active */}
-          <Link href="/create-barang" style={{ textDecoration: 'none' }}>
-            <div style={{
-              background: '#F5F5F5',
-              padding: '12px 16px',
-              borderRadius: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              cursor: 'pointer'
-            }}>
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M4 6L10 2L16 6M4 6V16C4 16.5523 4.44772 17 5 17H15C15.5523 17 16 16.5523 16 16V6M4 6L10 10L16 6" stroke="#333333" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M10 10V18" stroke="#333333" strokeWidth="1.5" strokeLinecap="round"/>
-              </svg>
-              <span style={{
-                color: '#333333',
-                fontSize: '16px',
-                fontWeight: 500
-              }}>
-                Create Barang
-              </span>
-            </div>
-          </Link>
-
-          {/* Data Inventaris */}
-          <Link href="/data-inventaris" style={{ textDecoration: 'none' }}>
-            <div style={{
-              padding: '12px 16px',
-              borderRadius: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              cursor: 'pointer'
-            }}>
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="10" cy="5" r="3" stroke="#666666" strokeWidth="1.5"/>
-                <circle cx="5" cy="12" r="2" stroke="#666666" strokeWidth="1.5"/>
-                <circle cx="15" cy="12" r="2" stroke="#666666" strokeWidth="1.5"/>
-                <path d="M10 8V15M5 14L10 15L15 14" stroke="#666666" strokeWidth="1.5" strokeLinecap="round"/>
-              </svg>
-              <span style={{
-                color: '#666666',
-                fontSize: '16px',
-                fontWeight: 400
-              }}>
-                Data Inventaris
-              </span>
-            </div>
-          </Link>
-
-          {/* Peminjaman */}
-          <Link href="/" style={{ textDecoration: 'none' }}>
-            <div style={{
-              padding: '12px 16px',
-              borderRadius: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              cursor: 'pointer'
-            }}>
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M14 2H6C4.89543 2 4 2.89543 4 4V16C4 17.1046 4.89543 18 6 18H14C15.1046 18 16 17.1046 16 16V4C16 2.89543 15.1046 2 14 2Z" stroke="#666666" strokeWidth="1.5"/>
-                <path d="M6 6H14M6 10H14M6 14H10" stroke="#666666" strokeWidth="1.5" strokeLinecap="round"/>
-              </svg>
-              <span style={{
-                color: '#666666',
-                fontSize: '16px',
-                fontWeight: 400
-              }}>
-                Peminjaman
-              </span>
-            </div>
-          </Link>
-
-          {/* Aktifitas */}
-          <Link href="/log-perubahan" style={{ textDecoration: 'none' }}>
-            <div style={{
-              padding: '12px 16px',
-              borderRadius: '8px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '12px',
-              cursor: 'pointer'
-            }}>
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="10" cy="10" r="8" stroke="#666666" strokeWidth="1.5"/>
-                <path d="M10 6V10L13 13" stroke="#666666" strokeWidth="1.5" strokeLinecap="round"/>
-              </svg>
-              <span style={{
-                color: '#666666',
-                fontSize: '16px',
-                fontWeight: 400
-              }}>
-                Aktifitas
-              </span>
-            </div>
-          </Link>
-        </div>
-
-        {/* Footer Menu */}
-        <div style={{
-          padding: '16px 12px',
-          borderTop: '1px solid #E5E5E5',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '4px'
-        }}>
-          {/* Pengaturan */}
-          <div style={{
-            padding: '12px 16px',
-            borderRadius: '8px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            cursor: 'pointer'
-          }}>
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M10 12C11.1046 12 12 11.1046 12 10C12 8.89543 11.1046 8 10 8C8.89543 8 8 8.89543 8 10C8 11.1046 8.89543 12 10 12Z" stroke="#666666" strokeWidth="1.5"/>
-              <path d="M15.6569 8.34315L14.2426 6.92893C14.0479 6.73418 13.7315 6.73418 13.5368 6.92893L12.8284 7.63736C12.4379 8.02788 11.8047 8.02788 11.4142 7.63736L10.7071 6.9303C10.5123 6.73554 10.1959 6.73554 10.0012 6.9303L8.58697 8.34451C8.39221 8.53927 8.39221 8.85565 8.58697 9.05041L9.2954 9.75884C9.68592 10.1494 9.68592 10.7825 9.2954 11.173L8.58834 11.8801C8.39358 12.0749 8.39358 12.3913 8.58834 12.586L10.0026 14.0003C10.1973 14.195 10.5137 14.195 10.7085 14.0003L11.4155 13.2932C11.8061 12.9027 12.4392 12.9027 12.8297 13.2932L13.5382 14.0017C13.7329 14.1964 14.0493 14.1964 14.2441 14.0017L15.6583 12.5875C15.853 12.3927 15.853 12.0763 15.6583 11.8816L14.9508 11.1741C14.5603 10.7836 14.5603 10.1504 14.9508 9.75992L15.6579 9.05286C15.8526 8.8581 15.8526 8.54172 15.6579 8.34696L15.6569 8.34315Z" stroke="#666666" strokeWidth="1.5" strokeLinecap="round"/>
-            </svg>
-            <span style={{
-              color: '#666666',
-              fontSize: '16px',
-              fontWeight: 400
-            }}>
-              Pengaturan
-            </span>
-          </div>
-
-          {/* Keluar */}
-          <div style={{
-            padding: '12px 16px',
-            borderRadius: '8px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '12px',
-            cursor: 'pointer'
-          }}>
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M7 17H4C3.44772 17 3 16.5523 3 16V4C3 3.44772 3.44772 3 4 3H7M14 14L17 10M17 10L14 6M17 10H7" stroke="#666666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-            <span style={{
-              color: '#666666',
-              fontSize: '16px',
-              fontWeight: 400
-            }}>
-              Keluar
-            </span>
-          </div>
-        </div>
-      </div>
+      <Sidebar />
 
       {/* Main Content Area */}
       <div style={{
@@ -320,8 +328,8 @@ export default function CreateBarangPage() {
             marginBottom: '8px'
           }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M4 6L10 2L16 6M4 6V16C4 16.5523 4.44772 17 5 17H15C15.5523 17 16 16.5523 16 16V6M4 6L10 10L16 6" stroke="#333333" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M10 10V18" stroke="#333333" strokeWidth="1.5" strokeLinecap="round"/>
+              <path d="M4 6L10 2L16 6M4 6V16C4 16.5523 4.44772 17 5 17H15C15.5523 17 16 16.5523 16 16V6M4 6L10 10L16 6" stroke="#333333" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M10 10V18" stroke="#333333" strokeWidth="1.5" strokeLinecap="round" />
             </svg>
             <h2 style={{
               color: '#333333',
@@ -357,10 +365,11 @@ export default function CreateBarangPage() {
               <div style={{ position: 'relative' }}>
                 <input
                   type="text"
-                  name="pilihProduk"
-                  value={formData.pilihProduk}
-                  onChange={handleChange}
-                  placeholder="Pilih produk master"
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  onFocus={() => setShowDropdown(true)}
+                  onBlur={handleBlur}
+                  placeholder="Ketik nama atau kode produk..."
                   style={{
                     width: '100%',
                     padding: '12px 16px',
@@ -368,7 +377,7 @@ export default function CreateBarangPage() {
                     border: '1px solid #E0E0E0',
                     borderRadius: '8px',
                     fontSize: '14px',
-                    color: formData.pilihProduk ? '#000000' : '#999999',
+                    color: searchQuery ? '#000000' : '#999999',
                     background: '#FFFFFF',
                     fontFamily: 'inherit'
                   }}
@@ -380,21 +389,57 @@ export default function CreateBarangPage() {
                   transform: 'translateY(-50%)',
                   pointerEvents: 'none'
                 }}>
-                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M1 1L6 6L11 1" stroke="#666666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M11 11L8.5 8.5M9.5 5.5C9.5 7.70914 7.70914 9.5 5.5 9.5C3.29086 9.5 1.5 7.70914 1.5 5.5C1.5 3.29086 3.29086 1.5 5.5 1.5C7.70914 1.5 9.5 3.29086 9.5 5.5Z" stroke="#999999" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </div>
+
+                {/* Autocomplete Dropdown */}
+                {showDropdown && filteredProduk.length > 0 && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    marginTop: '4px',
+                    background: '#FFFFFF',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                    border: '1px solid #F3F4F6',
+                    maxHeight: '200px',
+                    overflowY: 'auto',
+                    zIndex: 20
+                  }}>
+                    {filteredProduk.map(produk => (
+                      <div
+                        key={produk.id}
+                        onClick={() => handleSelectProduk(produk)}
+                        style={{
+                          padding: '12px 16px',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                          color: '#333333',
+                          borderBottom: '1px solid #F9FAFB'
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = '#F9FAFB'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = '#FFFFFF'; }}
+                      >
+                        {produk.nama} <span style={{ color: '#6B7280', fontSize: '12px' }}>({produk.kode})</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Nomor Seri and Tanggal Masuk - Two Columns */}
+            {/* Kode Seri and Tanggal Masuk - Two Columns */}
             <div style={{
               display: 'grid',
               gridTemplateColumns: '1fr 1fr',
               gap: '24px',
               marginBottom: '24px'
             }}>
-              {/* Nomor Seri */}
+              {/* Kode Seri */}
               <div>
                 <label style={{
                   display: 'block',
@@ -403,25 +448,62 @@ export default function CreateBarangPage() {
                   fontWeight: 600,
                   marginBottom: '8px'
                 }}>
-                  Nomor Seri
+                  Kode Seri
                 </label>
-                <input
-                  type="text"
-                  name="nomorSeri"
-                  value={formData.nomorSeri}
-                  onChange={handleChange}
-                  placeholder="Contoh : 001"
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    border: '1px solid #E0E0E0',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    color: formData.nomorSeri ? '#000000' : '#999999',
-                    background: '#FFFFFF',
-                    fontFamily: 'inherit'
-                  }}
-                />
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <input
+                    type="text"
+                    name="nomorSeri"
+                    value={isHabisPakai ? "" : formData.nomorSeri}
+                    onChange={handleChange}
+                    placeholder={isHabisPakai ? "Tidak diperlukan untuk barang habis pakai" : "Generasi otomatis..."}
+                    disabled
+                    style={{
+                      flex: 1,
+                      padding: '12px 16px',
+                      border: '1px solid #E0E0E0',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      color: formData.nomorSeri ? '#333333' : '#999999',
+                      background: '#F9FAFB',
+                      fontFamily: 'inherit',
+                      cursor: 'not-allowed'
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={handleGenerateSerial}
+                    disabled={!formData.pilihProduk || isGeneratingSerial || isHabisPakai}
+                    style={{
+                      padding: '12px 16px',
+                      background: isHabisPakai ? '#E2E8F0' : '#0F172A',
+                      color: isHabisPakai ? '#94A3B8' : '#FFFFFF',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      fontWeight: 500,
+                      cursor: (!formData.pilihProduk || isGeneratingSerial || isHabisPakai) ? 'not-allowed' : 'pointer',
+                      whiteSpace: 'nowrap',
+                      opacity: (!formData.pilihProduk || isGeneratingSerial) ? 0.5 : 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px'
+                    }}
+                  >
+                    {isGeneratingSerial ? '...' : (
+                      <>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                          <line x1="9" y1="9" x2="9.01" y2="9" />
+                          <line x1="15" y1="9" x2="15.01" y2="9" />
+                          <line x1="9" y1="15" x2="9.01" y2="15" />
+                          <line x1="15" y1="15" x2="15.01" y2="15" />
+                        </svg>
+                        Buat
+                      </>
+                    )}
+                  </button>
+                </div>
               </div>
 
               {/* Tanggal Masuk */}
@@ -437,11 +519,10 @@ export default function CreateBarangPage() {
                 </label>
                 <div style={{ position: 'relative' }}>
                   <input
-                    type="text"
+                    type="date"
                     name="tanggalMasuk"
                     value={formData.tanggalMasuk}
                     onChange={handleChange}
-                    placeholder="DD/MM/YYYY"
                     style={{
                       width: '100%',
                       padding: '12px 16px',
@@ -454,6 +535,49 @@ export default function CreateBarangPage() {
                       fontFamily: 'inherit'
                     }}
                   />
+                </div>
+              </div>
+            </div>
+
+            {/* Kondisi and Lokasi - Two Columns */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: '24px',
+              marginBottom: '24px'
+            }}>
+              {/* Kondisi Barang */}
+              <div>
+                <label style={{
+                  display: 'block',
+                  color: '#333333',
+                  fontSize: '14px',
+                  fontWeight: 600,
+                  marginBottom: '8px'
+                }}>
+                  Kondisi Barang
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <select
+                    name="kondisi"
+                    value={formData.kondisi}
+                    onChange={handleChange}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      paddingRight: '40px',
+                      border: '1px solid #E0E0E0',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      color: formData.kondisi ? '#000000' : '#999999',
+                      background: '#FFFFFF',
+                      appearance: 'none',
+                      fontFamily: 'inherit'
+                    }}
+                  >
+                    <option value="BAIK">Baik</option>
+                    <option value="RUSAK">Rusak</option>
+                  </select>
                   <div style={{
                     position: 'absolute',
                     right: '16px',
@@ -461,46 +585,232 @@ export default function CreateBarangPage() {
                     transform: 'translateY(-50%)',
                     pointerEvents: 'none'
                   }}>
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <path d="M12 2H4C2.89543 2 2 2.89543 2 4V12C2 13.1046 2.89543 14 4 14H12C13.1046 14 14 13.1046 14 12V4C14 2.89543 13.1046 2 12 2Z" stroke="#666666" strokeWidth="1.5"/>
-                      <path d="M2 6H14" stroke="#666666" strokeWidth="1.5"/>
-                      <path d="M5 2V6" stroke="#666666" strokeWidth="1.5"/>
-                      <path d="M11 2V6" stroke="#666666" strokeWidth="1.5"/>
+                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M1 1L6 6L11 1" stroke="#666666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Letak */}
-            <div style={{ marginBottom: '24px' }}>
-              <label style={{
-                display: 'block',
-                color: '#333333',
-                fontSize: '14px',
-                fontWeight: 600,
-                marginBottom: '8px'
-              }}>
-                Letak
-              </label>
-              <textarea
-                name="letak"
-                value={formData.letak}
-                onChange={handleChange}
-                placeholder="Ketik letak barang disini..."
-                rows={4}
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
-                  border: '1px solid #E0E0E0',
-                  borderRadius: '8px',
+              {/* Lokasi Autocomplete */}
+              <div>
+                <label style={{
+                  display: 'block',
+                  color: '#333333',
                   fontSize: '14px',
-                  color: formData.letak ? '#000000' : '#999999',
-                  background: '#FFFFFF',
-                  fontFamily: 'inherit',
-                  resize: 'vertical'
-                }}
-              />
+                  fontWeight: 600,
+                  marginBottom: '8px'
+                }}>
+                  Lokasi
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    border: '1px solid #E0E0E0',
+                    borderRadius: '8px',
+                    background: '#FFFFFF',
+                    padding: '8px 12px',
+                    gap: '8px'
+                  }}>
+                    {/* Chip for Selected Ruang */}
+                    {selectedRuang && (
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        background: '#ECEFF1',
+                        borderRadius: '16px',
+                        padding: '4px 12px',
+                        gap: '6px',
+                        width: 'auto',
+                        minWidth: '100px',
+                        maxWidth: '45%'
+                      }}>
+                        <span style={{
+                          fontSize: '12px',
+                          fontWeight: 500,
+                          color: '#333333',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          flex: 1
+                        }}>
+                          {selectedRuang}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={handleClearRuang}
+                          style={{
+                            border: 'none',
+                            background: 'transparent',
+                            cursor: 'pointer',
+                            padding: 0,
+                            display: 'flex',
+                            alignItems: 'center'
+                          }}
+                        >
+                          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M9 3L3 9M3 3L9 9" stroke="#666666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Chip for Selected Keterangan (Lokasi) */}
+                    {selectedKeterangan && (
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        background: '#E0F2F1', // Greenish tint
+                        borderRadius: '16px',
+                        padding: '4px 12px',
+                        gap: '6px',
+                        width: 'auto',
+                        minWidth: '100px',
+                        maxWidth: '45%'
+                      }}>
+                        <span style={{
+                          fontSize: '12px',
+                          fontWeight: 500,
+                          color: '#00695C',
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          flex: 1
+                        }}>
+                          {selectedKeterangan}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={handleClearLokasi}
+                          style={{
+                            border: 'none',
+                            background: 'transparent',
+                            cursor: 'pointer',
+                            padding: 0,
+                            display: 'flex',
+                            alignItems: 'center'
+                          }}
+                        >
+                          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M9 3L3 9M3 3L9 9" stroke="#004D40" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Input Field - Hide if Keterangan is selected */}
+                    {!selectedKeterangan && (
+                      <input
+                        type="text"
+                        value={lokasiSearchQuery}
+                        onChange={handleLokasiSearchChange}
+                        onFocus={() => setShowLokasiDropdown(true)}
+                        onBlur={handleLokasiBlur}
+                        placeholder={selectedRuang ? "Ketik keterangan spesifik..." : "Pilih Ruangan"}
+                        style={{
+                          border: 'none',
+                          outline: 'none',
+                          width: '100%',
+                          fontSize: '14px',
+                          color: lokasiSearchQuery ? '#000000' : '#999999',
+                          fontFamily: 'inherit',
+                          flex: 1
+                        }}
+                      />
+                    )}
+                  </div>
+
+                  {/* Dropdown Icon */}
+                  <div style={{
+                    position: 'absolute',
+                    right: '16px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    pointerEvents: 'none'
+                  }}>
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M11 11L8.5 8.5M9.5 5.5C9.5 7.70914 7.70914 9.5 5.5 9.5C3.29086 9.5 1.5 7.70914 1.5 5.5C1.5 3.29086 3.29086 1.5 5.5 1.5C7.70914 1.5 9.5 3.29086 9.5 5.5Z" stroke="#999999" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
+
+                  {/* Lokasi Dropdown */}
+                  {showLokasiDropdown && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      right: 0,
+                      marginTop: '4px',
+                      background: '#FFFFFF',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                      border: '1px solid #F3F4F6',
+                      maxHeight: '200px',
+                      overflowY: 'auto',
+                      zIndex: 20
+                    }}>
+                      {/* Filtered Items */}
+                      {filteredLokasi.map((item, index) => (
+                        <div
+                          key={index}
+                          onClick={() => handleSelectLokasiItem(item)}
+                          style={{
+                            padding: '12px 16px',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            color: '#333333',
+                            borderBottom: '1px solid #F9FAFB'
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = '#F9FAFB'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = '#FFFFFF'; }}
+                        >
+                          {item.type === 'ruang' ? (item.value as string) : (item.value as any).keterangan}
+                        </div>
+                      ))}
+
+                      {/* Add New Options */}
+                      {!selectedRuang && !filteredLokasi.some(i => i.type === 'ruang' && i.value === lokasiSearchQuery) && lokasiSearchQuery && (
+                        <div
+                          onClick={() => handleSelectLokasiItem({ type: 'new_ruang' })}
+                          style={{
+                            padding: '12px 16px',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            color: '#2F516A',
+                            fontWeight: 500,
+                            borderTop: '1px solid #F3F4F6'
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = '#F9FAFB'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = '#FFFFFF'; }}
+                        >
+                          + Tambahkan ruang baru "{lokasiSearchQuery}"
+                        </div>
+                      )}
+
+                      {selectedRuang && !filteredLokasi.some(i => i.type === 'lokasi' && (i.value as any).keterangan === lokasiSearchQuery) && lokasiSearchQuery && (
+                        <div
+                          onClick={() => handleSelectLokasiItem({ type: 'new_lokasi' })}
+                          style={{
+                            padding: '12px 16px',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            color: '#2F516A',
+                            fontWeight: 500,
+                            borderTop: '1px solid #F3F4F6'
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = '#F9FAFB'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = '#FFFFFF'; }}
+                        >
+                          + Tambahkan lokasi baru "{lokasiSearchQuery}"
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
             {/* QR Code Section */}
@@ -548,14 +858,14 @@ export default function CreateBarangPage() {
               >
                 Generate QR Code
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="2" y="2" width="5" height="5" rx="1" stroke="#333333" strokeWidth="1.5"/>
-                  <rect x="9" y="2" width="5" height="5" rx="1" stroke="#333333" strokeWidth="1.5"/>
-                  <rect x="2" y="9" width="5" height="5" rx="1" stroke="#333333" strokeWidth="1.5"/>
-                  <rect x="9" y="9" width="5" height="5" rx="1" stroke="#333333" strokeWidth="1.5"/>
-                  <rect x="4" y="4" width="1" height="1" fill="#333333"/>
-                  <rect x="11" y="4" width="1" height="1" fill="#333333"/>
-                  <rect x="4" y="11" width="1" height="1" fill="#333333"/>
-                  <rect x="11" y="11" width="1" height="1" fill="#333333"/>
+                  <rect x="2" y="2" width="5" height="5" rx="1" stroke="#333333" strokeWidth="1.5" />
+                  <rect x="9" y="2" width="5" height="5" rx="1" stroke="#333333" strokeWidth="1.5" />
+                  <rect x="2" y="9" width="5" height="5" rx="1" stroke="#333333" strokeWidth="1.5" />
+                  <rect x="9" y="9" width="5" height="5" rx="1" stroke="#333333" strokeWidth="1.5" />
+                  <rect x="4" y="4" width="1" height="1" fill="#333333" />
+                  <rect x="11" y="4" width="1" height="1" fill="#333333" />
+                  <rect x="4" y="11" width="1" height="1" fill="#333333" />
+                  <rect x="11" y="11" width="1" height="1" fill="#333333" />
                 </svg>
               </button>
             </div>
@@ -586,8 +896,8 @@ export default function CreateBarangPage() {
                 }}
               >
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M8 2C11.3137 2 14 4.68629 14 8C14 11.3137 11.3137 14 8 14M8 2C4.68629 2 2 4.68629 2 8C2 11.3137 4.68629 14 8 14M8 2V6M8 14V10" stroke="#333333" strokeWidth="1.5" strokeLinecap="round"/>
-                  <path d="M4 4L8 8M12 12L8 8" stroke="#333333" strokeWidth="1.5" strokeLinecap="round"/>
+                  <path d="M8 2C11.3137 2 14 4.68629 14 8C14 11.3137 11.3137 14 8 14M8 2C4.68629 2 2 4.68629 2 8C2 11.3137 4.68629 14 8 14M8 2V6M8 14V10" stroke="#333333" strokeWidth="1.5" strokeLinecap="round" />
+                  <path d="M4 4L8 8M12 12L8 8" stroke="#333333" strokeWidth="1.5" strokeLinecap="round" />
                 </svg>
                 Reset Form
               </button>
@@ -611,8 +921,8 @@ export default function CreateBarangPage() {
                 }}
               >
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M4 6L10 2L16 6M4 6V16C4 16.5523 4.44772 17 5 17H15C15.5523 17 16 16.5523 16 16V6M4 6L10 10L16 6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M10 10V18" stroke="white" strokeWidth="1.5" strokeLinecap="round"/>
+                  <path d="M4 6L10 2L16 6M4 6V16C4 16.5523 4.44772 17 5 17H15C15.5523 17 16 16.5523 16 16V6M4 6L10 10L16 6" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M10 10V18" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
                 </svg>
                 Simpan Produk
               </button>
