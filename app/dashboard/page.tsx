@@ -1,9 +1,74 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Sidebar from '@/components/Sidebar';
+import moment from 'moment';
 
 export default function DashboardPage() {
+  const [stats, setStats] = useState({
+    totalProduk: 0,
+    totalAsset: 0,
+    totalHabisPakai: 0,
+    totalStok: 0
+  });
+  const [recentProducts, setRecentProducts] = useState<any[]>([]);
+  const [recentActivities, setRecentActivities] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch Products
+        const prodRes = await fetch('/api/produk');
+        const products = await prodRes.json();
+
+        // Calculate Stats
+        const totalProduk = products.length;
+        const totalAsset = products.filter((p: any) => p.kategori === 'ASET').length;
+        const totalHabisPakai = products.filter((p: any) => p.kategori === 'HP').length;
+        
+        // Calculate Stock: Sum of kuantitas for HP, + 1 for each Asset (assuming each asset entry is a unit, OR use kuantitas if assets have it)
+        // Based on schema, Asset also has kuantitas.
+        const totalStok = products.reduce((sum: number, p: any) => sum + (p.kuantitas || 0), 0);
+
+        setStats({
+          totalProduk,
+          totalAsset,
+          totalHabisPakai,
+          totalStok
+        });
+
+        // Recent Products (Last 5)
+        const sortedProducts = [...products].sort((a: any, b: any) => b.id - a.id).slice(0, 5);
+        setRecentProducts(sortedProducts);
+
+        // Fetch Activities (Pengajuan)
+        const actRes = await fetch('/api/pengajuan');
+        const activities = await actRes.json();
+        
+        setRecentActivities(activities);
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', minHeight: '100vh', background: '#F5F5F5' }}>
+        <Sidebar />
+        <div style={{ marginLeft: '280px', padding: '32px', width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+          <p>Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -66,7 +131,7 @@ export default function DashboardPage() {
               fontWeight: 700,
               marginBottom: '4px'
             }}>
-              1
+              {stats.totalProduk}
             </div>
             <div style={{
               color: '#FFFFFF',
@@ -110,7 +175,7 @@ export default function DashboardPage() {
               fontWeight: 700,
               marginBottom: '4px'
             }}>
-              2
+              {stats.totalAsset}
             </div>
             <div style={{
               color: '#FFFFFF',
@@ -155,7 +220,7 @@ export default function DashboardPage() {
               fontWeight: 700,
               marginBottom: '4px'
             }}>
-              0
+              {stats.totalHabisPakai}
             </div>
             <div style={{
               color: '#333333',
@@ -199,7 +264,7 @@ export default function DashboardPage() {
               fontWeight: 700,
               marginBottom: '4px'
             }}>
-              2
+              {stats.totalStok}
             </div>
             <div style={{
               color: '#333333',
@@ -246,60 +311,72 @@ export default function DashboardPage() {
             </h2>
             <div style={{
               display: 'flex',
-              alignItems: 'center',
-              gap: '16px',
-              padding: '16px',
-              background: '#F9F9F9',
-              borderRadius: '8px'
+              flexDirection: 'column',
+              gap: '16px'
             }}>
-              <div style={{
-                width: '48px',
-                height: '48px',
-                background: '#F5F5F5',
-                borderRadius: '8px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="4" y="4" width="16" height="16" rx="2" stroke="#666666" strokeWidth="1.5" />
-                  <path d="M8 8H16M8 12H16M8 16H12" stroke="#666666" strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{
-                  color: '#333333',
-                  fontSize: '16px',
-                  fontWeight: 700,
-                  marginBottom: '4px'
-                }}>
-                  Router
-                </div>
-                <div style={{
-                  color: '#666666',
-                  fontSize: '14px',
-                  fontWeight: 400
-                }}>
-                  KODEPRODUK111
-                </div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div style={{
-                  color: '#333333',
-                  fontSize: '16px',
-                  fontWeight: 700,
-                  marginBottom: '4px'
-                }}>
-                  Asset
-                </div>
-                <div style={{
-                  color: '#666666',
-                  fontSize: '14px',
-                  fontWeight: 400
-                }}>
-                  Stok : 2
-                </div>
-              </div>
+              {recentProducts.length === 0 ? (
+                <p style={{ color: '#999' }}>Belum ada produk.</p>
+              ) : (
+                recentProducts.map((product) => (
+                  <div key={product.id} style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '16px',
+                    padding: '16px',
+                    background: '#F9F9F9',
+                    borderRadius: '8px'
+                  }}>
+                    <div style={{
+                      width: '48px',
+                      height: '48px',
+                      background: '#F5F5F5',
+                      borderRadius: '8px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="4" y="4" width="16" height="16" rx="2" stroke="#666666" strokeWidth="1.5" />
+                        <path d="M8 8H16M8 12H16M8 16H12" stroke="#666666" strokeWidth="1.5" strokeLinecap="round" />
+                      </svg>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{
+                        color: '#333333',
+                        fontSize: '16px',
+                        fontWeight: 700,
+                        marginBottom: '4px'
+                      }}>
+                        {product.nama}
+                      </div>
+                      <div style={{
+                        color: '#666666',
+                        fontSize: '14px',
+                        fontWeight: 400
+                      }}>
+                        {product.kode}
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{
+                        color: '#333333',
+                        fontSize: '16px',
+                        fontWeight: 700,
+                        marginBottom: '4px'
+                      }}>
+                        {product.kategori === 'ASET' ? 'Aset' : product.kategori === 'HP' ? 'Habis Pakai' : product.kategori}
+                      </div>
+                      <div style={{
+                        color: '#666666',
+                        fontSize: '14px',
+                        fontWeight: 400
+                      }}>
+                        Stok : {product.kuantitas}
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 
@@ -323,71 +400,43 @@ export default function DashboardPage() {
               flexDirection: 'column',
               gap: '16px'
             }}>
-              {/* Activity 1 */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '12px'
-              }}>
-                <div style={{
-                  width: '8px',
-                  height: '8px',
-                  borderRadius: '50%',
-                  background: '#3B82F6',
-                  marginTop: '6px',
-                  flexShrink: 0
-                }} />
-                <div style={{ flex: 1 }}>
-                  <div style={{
-                    color: '#333333',
-                    fontSize: '16px',
-                    fontWeight: 400,
-                    marginBottom: '4px'
+              {recentActivities.length === 0 ? (
+                <p style={{ color: '#999' }}>Belum ada aktivitas.</p>
+              ) : (
+                recentActivities.map((activity, index) => (
+                  <div key={activity.id} style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: '12px'
                   }}>
-                    Barang baru : Router - KODEBARANG111
+                    <div style={{
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      background: '#3B82F6',
+                      marginTop: '6px',
+                      flexShrink: 0
+                    }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{
+                        color: '#333333',
+                        fontSize: '16px',
+                        fontWeight: 400,
+                        marginBottom: '4px'
+                      }}>
+                        Peminjaman: {activity.peminjam?.nama} - {activity.kode_resi}
+                      </div>
+                      <div style={{
+                        color: '#666666',
+                        fontSize: '14px',
+                        fontWeight: 400
+                      }}>
+                        {moment(activity.tanggal_pinjam).format('DD MMM YYYY, HH:mm')} | {activity.status}
+                      </div>
+                    </div>
                   </div>
-                  <div style={{
-                    color: '#666666',
-                    fontSize: '14px',
-                    fontWeight: 400
-                  }}>
-                    23 Jan 2026, 21:27 | Admin
-                  </div>
-                </div>
-              </div>
-
-              {/* Activity 2 */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: '12px'
-              }}>
-                <div style={{
-                  width: '8px',
-                  height: '8px',
-                  borderRadius: '50%',
-                  background: '#3B82F6',
-                  marginTop: '6px',
-                  flexShrink: 0
-                }} />
-                <div style={{ flex: 1 }}>
-                  <div style={{
-                    color: '#333333',
-                    fontSize: '16px',
-                    fontWeight: 400,
-                    marginBottom: '4px'
-                  }}>
-                    Barang baru : Router - KODEBARANG112
-                  </div>
-                  <div style={{
-                    color: '#666666',
-                    fontSize: '14px',
-                    fontWeight: 400
-                  }}>
-                    23 Jan 2026, 21:27 | Admin
-                  </div>
-                </div>
-              </div>
+                ))
+              )}
             </div>
           </div>
         </div>
