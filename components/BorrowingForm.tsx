@@ -1,614 +1,585 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import Image from 'next/image';
+import { useState } from 'react';
+import illustration from '@/app/illustration.png';
 
-interface BorrowItem {
-    id: number; // local temp id
-    produkName: string;
-    idProduk: number | null;
-    kuantitas: number;
-    produkData: any | null;
+interface Product {
+  id: number;
+  nama: string;
+  stok: number;
 }
 
 export default function BorrowingForm() {
-    const [formData, setFormData] = useState({
-        kategori: '',
-        identitas: '',
-        catatanBarang: '',
-        tanggalPinjam: '',
-        tanggalKembali: '',
+  const [formData, setFormData] = useState({
+    kategori: '',
+    identitas: '',
+    barang: '',
+    catatanBarang: '',
+    tanggalPinjam: '',
+    tanggalKembali: '',
+  });
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
+
+  // Dummy data produk
+  const [products] = useState<Product[]>([
+    { id: 1, nama: 'Flashdisk USB C', stok: 3 },
+    { id: 2, nama: 'HDMI', stok: 2 },
+  ]);
+
+  // Filter produk berdasarkan search query
+  const filteredProducts = products.filter(product =>
+    product.nama.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const handleAddProduct = (product: Product) => {
+    if (!selectedProducts.find(p => p.id === product.id)) {
+      setSelectedProducts([...selectedProducts, product]);
+    }
+  };
+
+  const handleConfirm = () => {
+    const productNames = selectedProducts.map(p => p.nama).join(', ');
+    setFormData({
+      ...formData,
+      barang: productNames,
     });
+    setIsModalOpen(false);
+    setSelectedProducts([]);
+    setSearchQuery('');
+  };
 
-    const [selectedPeminjam, setSelectedPeminjam] = useState<any>(null);
+  const handleBarangClick = () => {
+    setIsModalOpen(true);
+  };
 
-    // Items State
-    const [items, setItems] = useState<BorrowItem[]>([
-        { id: Date.now(), produkName: '', idProduk: null, kuantitas: 1, produkData: null }
-    ]);
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Handle form submission
+  };
 
-    const [peminjamList, setPeminjamList] = useState<any[]>([]);
-    const [produkList, setProdukList] = useState<any[]>([]);
-    const [filteredProdukList, setFilteredProdukList] = useState<any[]>([]);
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const target = e.target as HTMLInputElement;
+    setFormData({
+      ...formData,
+      [target.name]: target.value,
+    });
+  };
 
-    // Track which item is currently searching
-    const [activeItemIndex, setActiveItemIndex] = useState<number | null>(null);
+  return (
+    <div style={{ display: 'flex', minHeight: '100vh', width: '100%' }}>
+      {/* Left Panel - Dark Teal */}
+      <div style={{
+        width: '50%',
+        background: '#20B2AA',
+        position: 'relative',
+        overflow: 'hidden'
+      }}>
+        {/* Illustration Image - Full Background */}
+        <img 
+          src={typeof illustration === 'string' ? illustration : illustration.src} 
+          alt="Lab Illustration" 
+          style={{ 
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            objectFit: 'cover',
+            objectPosition: 'center',
+            display: 'block'
+          }}
+        />
 
-    const [showIdentitasDropdown, setShowIdentitasDropdown] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
-
-    // Initial Date and Product Data
-    useEffect(() => {
-        const today = new Date().toISOString().split('T')[0];
-        setFormData(prev => ({ ...prev, tanggalPinjam: today }));
-
-        const fetchProduk = async () => {
-            try {
-                const res = await fetch('/api/produk');
-                if (res.ok) {
-                    const data = await res.json();
-                    setProdukList(data);
-                }
-            } catch (error) {
-                console.error('Error fetching produk:', error);
-            }
-        };
-        fetchProduk();
-    }, []);
-
-    // Search Peminjam
-    const handleIdentitasSearch = async (query: string) => {
-        setFormData(prev => ({ ...prev, identitas: query }));
-        setSelectedPeminjam(null);
-        if (query.length > 1) {
-            try {
-                const res = await fetch(`/api/peminjam?query=${query}`);
-                if (res.ok) {
-                    const data = await res.json();
-                    setPeminjamList(data);
-                    setShowIdentitasDropdown(true);
-                }
-            } catch (error) {
-                console.error("Error searching peminjam:", error);
-            }
-        } else {
-            setShowIdentitasDropdown(false);
-        }
-    };
-
-    const handleSelectPeminjam = (peminjam: any) => {
-        setFormData(prev => ({ ...prev, identitas: `${peminjam.nama} - ${peminjam.nomor_induk}`, kategori: peminjam.kategori === 'GURU' ? 'guru' : 'murid' }));
-        setSelectedPeminjam(peminjam);
-        setShowIdentitasDropdown(false);
-    };
-
-    // Item Management
-    const handleAddItem = () => {
-        setItems(prev => [
-            ...prev,
-            { id: Date.now(), produkName: '', idProduk: null, kuantitas: 1, produkData: null }
-        ]);
-    };
-
-    const handleRemoveItem = (index: number) => {
-        setItems(prev => prev.filter((_, i) => i !== index));
-    };
-
-    const handleItemSearch = (index: number, query: string) => {
-        const newItems = [...items];
-        newItems[index].produkName = query;
-        newItems[index].idProduk = null; // Reset selection on typing
-        newItems[index].produkData = null;
-        setItems(newItems);
-
-        if (query.length > 0) {
-            const filtered = produkList.filter(p =>
-                p.nama.toLowerCase().includes(query.toLowerCase()) ||
-                p.kode.toLowerCase().includes(query.toLowerCase())
-            );
-            setFilteredProdukList(filtered);
-            setActiveItemIndex(index);
-        } else {
-            setActiveItemIndex(null);
-        }
-    };
-
-    const handleSelectProduk = (index: number, produk: any) => {
-        const newItems = [...items];
-        newItems[index].produkName = produk.nama;
-        newItems[index].idProduk = produk.id;
-        newItems[index].produkData = produk;
-        setItems(newItems);
-        setActiveItemIndex(null);
-    };
-
-    const handleQuantityChange = (index: number, val: string) => {
-        const newItems = [...items];
-        newItems[index].kuantitas = parseInt(val) || 0;
-        setItems(newItems);
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        if (!selectedPeminjam) {
-            alert('Mohon pilih Identitas peminjam.');
-            return;
-        }
-
-        if (items.length === 0 || items.some(i => !i.idProduk || i.kuantitas <= 0)) {
-            alert('Mohon lengkapi data barang (Produk dan Kuantitas valid).');
-            return;
-        }
-
-        setIsLoading(true);
-
-        const apiData = {
-            id_peminjam: selectedPeminjam.id,
-            items: items.map(i => ({
-                id_produk: i.idProduk,
-                kuantitas: i.kuantitas
-            })),
-            alasan: formData.catatanBarang || '-',
-            tanggal_pinjam: formData.tanggalPinjam,
-            tanggal_kembali: formData.tanggalKembali || null
-        };
-
-        try {
-            const response = await fetch('/api/pengajuan', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(apiData)
-            });
-
-            if (!response.ok) {
-                throw new Error('Failed to submit pengajuan');
-            }
-
-            alert('Pengajuan berhasil dikirim!');
-            // Reset form
-            setFormData({
-                kategori: '',
-                identitas: '',
-                catatanBarang: '',
-                tanggalPinjam: new Date().toISOString().split('T')[0],
-                tanggalKembali: '',
-            });
-            setSelectedPeminjam(null);
-            setItems([{ id: Date.now(), produkName: '', idProduk: null, kuantitas: 1, produkData: null }]);
-
-        } catch (error) {
-            console.error(error);
-            alert('Gagal mengirim pengajuan.');
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value,
-        });
-    };
-
-    return (
-        <div style={{ display: 'flex', minHeight: '100vh', width: '100%' }}>
-            {/* Left Panel */}
-            <div style={{
-                width: '50%',
-                height: '100vh',
-                background: '#415A66',
-                position: 'sticky',
-                overflow: 'hidden',
-                top: 0
+        {/* Overlay Content */}
+        <div style={{
+          position: 'relative',
+          zIndex: 2,
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          padding: '40px'
+        }}>
+          {/* Logo */}
+          <div style={{ marginBottom: '40px' }}>
+            <div style={{ 
+              display: 'inline-flex', 
+              alignItems: 'center', 
+              gap: '12px',
+              background: '#FFFFFF',
+              borderRadius: '12px',
+              padding: '12px 20px'
             }}>
-                <Image
-                    src="/illustration.webp"
-                    alt="Lab Illustration"
-                    fill
-                    style={{
-                        position: 'absolute',
-                        top: 0,
-                        left: 0,
-                        objectFit: 'cover',
-                        objectPosition: 'bottom',
-                        display: 'block'
-                    }}
-                />
-                <div style={{
-                    position: 'relative',
-                    zIndex: 2,
-                    height: '100%',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    padding: '40px'
-                }}>
-                    <div style={{ marginBottom: '40px' }}>
-                        <div style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '6px',
-                            background: '#FFFFFF',
-                            borderRadius: '24px',
-                            padding: '4px 8px'
-                        }}>
-                            <Image src="/logo.webp" alt="Simpelab Logo" width={48} height={48} />
-                            <span style={{
-                                color: '#2F516A',
-                                fontSize: '20px',
-                                fontWeight: 700,
-                                fontFamily: 'Outfit, sans-serif'
-                            }}>
-                                Simpelab
-                            </span>
-                        </div>
-                    </div>
-                    <div style={{ marginBottom: '20px' }}>
-                        <div style={{
-                            color: '#FEFEFE',
-                            fontSize: '24px',
-                            fontWeight: 400,
-                            lineHeight: '100%',
-                            letterSpacing: '0%',
-                            marginBottom: '8px',
-                            fontFamily: 'Outfit, sans-serif'
-                        }}>
-                            Welcome To
-                        </div>
-                        <h1 style={{
-                            color: '#FEFEFE',
-                            fontSize: '64px',
-                            fontWeight: 600,
-                            lineHeight: '100%',
-                            letterSpacing: '0%',
-                            margin: 0,
-                            textTransform: 'capitalize',
-                            fontFamily: 'Outfit, sans-serif'
-                        }}>
-                            Simpelab
-                        </h1>
-                    </div>
-                </div>
+              <img src="/logo.png" alt="Simpelab Logo" style={{ width: '32px', height: '32px' }} />
+              <span style={{ 
+                color: '#20B2AA', 
+                fontSize: '20px', 
+                fontWeight: 700,
+                fontFamily: 'Outfit, sans-serif'
+              }}>
+                Simpelab
+              </span>
             </div>
+          </div>
 
-            {/* Right Panel - White Form */}
+          {/* Welcome Text */}
+          <div style={{ marginBottom: '20px' }}>
             <div style={{
-                width: '50%',
-                background: '#F5F5F5',
-                display: 'flex',
-                flexDirection: 'column',
-                padding: '60px 80px',
-                justifyContent: 'center'
+              color: '#FEFEFE',
+              fontSize: '24px',
+              fontWeight: 400,
+              lineHeight: '100%',
+              letterSpacing: '0%',
+              marginBottom: '8px',
+              fontFamily: 'Outfit, sans-serif'
             }}>
-                <form
-                    onSubmit={handleSubmit}
-                    style={{
-                        width: '100%',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '20px'
-                    }}
-                >
-                    {/* Row 1: Kategori and Identitas */}
-                    <div style={{ display: 'flex', gap: '16px' }}>
-                        <div style={{ flex: 1 }}>
-                            <label className="block mb-2.5" style={{ color: '#333333', fontSize: '14px', fontWeight: 600 }}>
-                                Kategori
-                            </label>
-                            <div className="relative">
-                                <select
-                                    name="kategori"
-                                    value={formData.kategori}
-                                    onChange={handleChange}
-                                    disabled={!!selectedPeminjam}
-                                    className="w-full px-4 py-3 border rounded-lg focus:outline-none"
-                                    style={{
-                                        appearance: 'none',
-                                        background: selectedPeminjam ? '#F3F4F6' : '#FFFFFF',
-                                        fontSize: '14px',
-                                        color: formData.kategori ? '#000000' : '#AAAAAA',
-                                        height: '48px',
-                                        paddingLeft: '40px',
-                                        borderColor: '#E0E0E0',
-                                        borderRadius: '8px',
-                                        cursor: selectedPeminjam ? 'not-allowed' : 'pointer'
-                                    }}
-                                >
-                                    <option value="">Opsi</option>
-                                    <option value="guru">Guru</option>
-                                    <option value="murid">Murid</option>
-                                </select>
-                                <div className="absolute left-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <circle cx="4" cy="4" r="1.5" fill="#666666" />
-                                        <rect x="6.5" y="2.5" width="3" height="3" rx="0.5" fill="#666666" />
-                                        <path d="M11.5 2L13.5 4L11.5 6L9.5 4L11.5 2Z" fill="#666666" />
-                                    </svg>
-                                </div>
-                                <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                                    <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M1 1L6 6L11 1" stroke="#666666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                    </svg>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div style={{ flex: 1, position: 'relative' }}>
-                            <label className="block mb-2.5" style={{ color: '#333333', fontSize: '14px', fontWeight: 600 }}>
-                                Identitas
-                            </label>
-                            <div className="relative">
-                                <input
-                                    type="text"
-                                    name="identitas"
-                                    value={formData.identitas}
-                                    onChange={(e) => handleIdentitasSearch(e.target.value)}
-                                    placeholder="Cari nama atau nomor induk..."
-                                    autoComplete="off"
-                                    className="w-full px-4 py-3 border rounded-lg focus:outline-none"
-                                    style={{
-                                        fontSize: '14px',
-                                        color: selectedPeminjam ? '#333333' : (formData.identitas ? '#000000' : '#AAAAAA'),
-                                        height: '48px',
-                                        paddingLeft: '40px',
-                                        borderColor: '#E0E0E0',
-                                        borderRadius: '8px',
-                                        background: '#FFFFFF'
-                                    }}
-                                />
-                                <div className="absolute left-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <path d="M8 8C9.65685 8 11 6.65685 11 5C11 3.34315 9.65685 2 8 2C6.34315 2 5 3.34315 5 5C5 6.65685 6.34315 8 8 8Z" stroke="#666666" strokeWidth="1.5" />
-                                        <path d="M2 14C2 11.7909 4.68629 10 8 10C11.3137 10 14 11.7909 14 14" stroke="#666666" strokeWidth="1.5" strokeLinecap="round" />
-                                    </svg>
-                                </div>
-                                {showIdentitasDropdown && peminjamList.length > 0 && (
-                                    <div style={{
-                                        position: 'absolute',
-                                        top: '100%',
-                                        left: 0,
-                                        width: '100%',
-                                        maxHeight: '200px',
-                                        overflowY: 'auto',
-                                        background: '#FFF',
-                                        border: '1px solid #E0E0E0',
-                                        borderRadius: '8px',
-                                        zIndex: 10,
-                                        marginTop: '4px',
-                                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                                    }}>
-                                        {peminjamList.map((p: any) => (
-                                            <div
-                                                key={p.id}
-                                                onClick={() => handleSelectPeminjam(p)}
-                                                style={{
-                                                    padding: '12px 16px',
-                                                    cursor: 'pointer',
-                                                    fontSize: '14px',
-                                                    color: '#333'
-                                                }}
-                                                onMouseEnter={(e) => e.currentTarget.style.background = '#F9FAFB'}
-                                                onMouseLeave={(e) => e.currentTarget.style.background = '#FFF'}
-                                            >
-                                                <div style={{ fontWeight: 600 }}>{p.nama}</div>
-                                                <div style={{ fontSize: '12px', color: '#666' }}>{p.nomor_induk} - {p.kelas}</div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Barang Section (Multi-Item) */}
-                    <div>
-                        <label className="block mb-2.5" style={{ color: '#333333', fontSize: '14px', fontWeight: 600 }}>
-                            Barang
-                        </label>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                            {items.map((item, index) => (
-                                <div key={item.id} style={{
-                                    border: '1px solid #E0E0E0',
-                                    borderRadius: '8px',
-                                    padding: '16px',
-                                    background: '#FFFFFF'
-                                }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                                        <span style={{ fontSize: '14px', fontWeight: 600, color: '#333' }}>#{String(index + 1).padStart(2, '0')}</span>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleRemoveItem(index)}
-                                            style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 0 }}
-                                        >
-                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                <polyline points="3 6 5 6 21 6"></polyline>
-                                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                                            </svg>
-                                        </button>
-                                    </div>
-
-                                    <div style={{ marginBottom: '12px', position: 'relative' }}>
-                                        <label style={{ display: 'block', fontSize: '12px', color: '#888', marginBottom: '4px' }}>Nama Produk</label>
-                                        <input
-                                            type="text"
-                                            value={item.produkName}
-                                            onChange={(e) => handleItemSearch(index, e.target.value)}
-                                            placeholder="Cari barang..."
-                                            className="w-full px-4 py-3 border rounded-lg focus:outline-none"
-                                            style={{ fontSize: '14px', background: '#F9FAFB', color: '#333' }}
-                                        />
-                                        {activeItemIndex === index && filteredProdukList.length > 0 && (
-                                            <div style={{
-                                                position: 'absolute',
-                                                top: '100%',
-                                                left: 0,
-                                                width: '100%',
-                                                maxHeight: '200px',
-                                                overflowY: 'auto',
-                                                background: '#FFF',
-                                                border: '1px solid #E0E0E0',
-                                                borderRadius: '8px',
-                                                zIndex: 10,
-                                                marginTop: '4px',
-                                                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                                            }}>
-                                                {filteredProdukList.map((p: any) => (
-                                                    <div
-                                                        key={p.id}
-                                                        onClick={() => handleSelectProduk(index, p)}
-                                                        style={{
-                                                            padding: '12px 16px',
-                                                            cursor: 'pointer',
-                                                            fontSize: '14px',
-                                                            color: '#333'
-                                                        }}
-                                                        onMouseEnter={(e) => e.currentTarget.style.background = '#F9FAFB'}
-                                                        onMouseLeave={(e) => e.currentTarget.style.background = '#FFF'}
-                                                    >
-                                                        <div style={{ fontWeight: 600 }}>{p.nama}</div>
-                                                        <div style={{ fontSize: '12px', color: '#666' }}>{p.kode} - {p.merk}</div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    <div>
-                                        <label style={{ display: 'block', fontSize: '12px', color: '#888', marginBottom: '4px' }}>Kuantitas</label>
-                                        <input
-                                            type="number"
-                                            min="1"
-                                            value={item.kuantitas}
-                                            onChange={(e) => handleQuantityChange(index, e.target.value)}
-                                            className="w-full px-4 py-3 border rounded-lg focus:outline-none"
-                                            style={{ fontSize: '14px', background: '#F9FAFB', color: '#333' }}
-                                        />
-                                    </div>
-                                </div>
-                            ))}
-
-                            <button
-                                type="button"
-                                onClick={handleAddItem}
-                                style={{
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    gap: '8px',
-                                    padding: '12px',
-                                    background: '#F9FAFB',
-                                    border: '1px solid #E0E0E0',
-                                    borderRadius: '8px',
-                                    color: '#2F516A',
-                                    fontWeight: 600,
-                                    fontSize: '14px',
-                                    cursor: 'pointer'
-                                }}
-                            >
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <line x1="12" y1="5" x2="12" y2="19"></line>
-                                    <line x1="5" y1="12" x2="19" y2="12"></line>
-                                </svg>
-                                Tambahkan Barang
-                            </button>
-                        </div>
-                    </div>
-
-                    {/* Row 3: Catatan Barang */}
-                    <div>
-                        <label className="block mb-2.5" style={{ color: '#333333', fontSize: '14px', fontWeight: 600 }}>
-                            Catatan Barang / Alasan
-                        </label>
-                        <textarea
-                            name="catatanBarang"
-                            value={formData.catatanBarang}
-                            onChange={handleChange}
-                            placeholder="Ketik catatan barang atau alasan peminjaman..."
-                            className="w-full px-4 py-3 border rounded-lg focus:outline-none resize-none"
-                            style={{
-                                fontSize: '14px',
-                                color: formData.catatanBarang ? '#000000' : '#AAAAAA',
-                                minHeight: '100px',
-                                fontFamily: 'inherit',
-                                borderColor: '#E0E0E0',
-                                borderRadius: '8px',
-                                background: '#FFFFFF'
-                            }}
-                        />
-                    </div>
-
-                    {/* Row 4: Tanggal Pinjam and Tanggal Kembali */}
-                    <div style={{ display: 'flex', gap: '16px' }}>
-                        <div style={{ flex: 1 }}>
-                            <label className="block mb-2.5" style={{ color: '#333333', fontSize: '14px', fontWeight: 600 }}>
-                                Tanggal Pinjam
-                            </label>
-                            <div className="relative">
-                                <input
-                                    type="date"
-                                    name="tanggalPinjam"
-                                    value={formData.tanggalPinjam}
-                                    onChange={handleChange}
-                                    className="w-full px-4 py-3 border rounded-lg focus:outline-none"
-                                    style={{
-                                        fontSize: '14px',
-                                        color: formData.tanggalPinjam ? '#000000' : '#AAAAAA',
-                                        height: '48px',
-                                        borderColor: '#E0E0E0',
-                                        borderRadius: '8px',
-                                        background: '#FFFFFF'
-                                    }}
-                                />
-                            </div>
-                        </div>
-
-                        <div style={{ flex: 1 }}>
-                            <label className="block mb-2.5" style={{ color: '#333333', fontSize: '14px', fontWeight: 600 }}>
-                                Tanggal Kembali
-                            </label>
-                            <div className="relative">
-                                <input
-                                    type="date"
-                                    name="tanggalKembali"
-                                    value={formData.tanggalKembali}
-                                    onChange={handleChange}
-                                    className="w-full px-4 py-3 border rounded-lg focus:outline-none"
-                                    style={{
-                                        fontSize: '14px',
-                                        color: formData.tanggalKembali ? '#000000' : '#AAAAAA',
-                                        height: '48px',
-                                        borderColor: '#E0E0E0',
-                                        borderRadius: '8px',
-                                        background: '#FFFFFF'
-                                    }}
-                                />
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Submit Button */}
-                    <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="w-full rounded-lg font-semibold text-white transition-colors"
-                        style={{
-                            background: '#2F5F7C',
-                            fontSize: '15px',
-                            fontWeight: 600,
-                            height: '48px',
-                            marginTop: '8px',
-                            borderRadius: '8px',
-                            opacity: isLoading ? 0.7 : 1,
-                            cursor: isLoading ? 'not-allowed' : 'pointer'
-                        }}
-                        onMouseEnter={(e) => { if (!isLoading) e.currentTarget.style.background = '#254A63'; }}
-                        onMouseLeave={(e) => { if (!isLoading) e.currentTarget.style.background = '#2F5F7C'; }}
-                    >
-                        {isLoading ? 'Mengirim...' : 'Ajukan peminjaman'}
-                    </button>
-                </form>
+              Welcome To
             </div>
+            <h1 style={{
+              color: '#FEFEFE',
+              fontSize: '64px',
+              fontWeight: 600,
+              lineHeight: '100%',
+              letterSpacing: '0%',
+              margin: 0,
+              textTransform: 'capitalize',
+              fontFamily: 'Outfit, sans-serif'
+            }}>
+              Simpelab
+            </h1>
+          </div>
         </div>
-    );
+      </div>
+
+      {/* Right Panel - White Form */}
+      <div style={{
+        width: '50%',
+        background: '#F5F5F5',
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '60px 80px',
+        justifyContent: 'center'
+      }}>
+        {/* Form */}
+        <form 
+          onSubmit={handleSubmit} 
+          style={{
+            width: '100%',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '20px'
+          }}
+        >
+          {/* Row 1: Kategori Peminjam and Identitas */}
+          <div style={{ display: 'flex', gap: '16px' }}>
+            {/* Kategori Peminjam */}
+            <div style={{ flex: 1 }}>
+              <label className="block mb-2.5" style={{ color: '#333333', fontSize: '14px', fontWeight: 600, marginBottom: '12px' }}>
+                Kategori Peminjam
+              </label>
+              <div style={{ display: 'flex', gap: '20px' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                  <input
+                    type="radio"
+                    name="kategori"
+                    value="guru"
+                    checked={formData.kategori === 'guru'}
+                    onChange={handleChange}
+                    style={{
+                      width: '18px',
+                      height: '18px',
+                      cursor: 'pointer',
+                      accentColor: '#333333'
+                    }}
+                  />
+                  <span style={{ fontSize: '14px', color: '#333333' }}>Guru</span>
+                </label>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+                  <input
+                    type="radio"
+                    name="kategori"
+                    value="siswa"
+                    checked={formData.kategori === 'siswa'}
+                    onChange={handleChange}
+                    style={{
+                      width: '18px',
+                      height: '18px',
+                      cursor: 'pointer',
+                      accentColor: '#333333'
+                    }}
+                  />
+                  <span style={{ fontSize: '14px', color: '#333333' }}>Siswa</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Identitas */}
+            <div style={{ flex: 1 }}>
+              <label className="block mb-2.5" style={{ color: '#333333', fontSize: '14px', fontWeight: 600 }}>
+                Identitas
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  name="identitas"
+                  value={formData.identitas}
+                  onChange={handleChange}
+                  placeholder="Ketik identitas anda"
+                  className="w-full px-4 py-3 border rounded-lg focus:outline-none"
+                  style={{ 
+                    fontSize: '14px', 
+                    color: formData.identitas ? '#000000' : '#AAAAAA', 
+                    height: '48px',
+                    paddingLeft: '40px',
+                    borderColor: '#E0E0E0',
+                    borderRadius: '8px',
+                    background: '#FFFFFF'
+                  }}
+                />
+                <div className="absolute left-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M8 8C9.65685 8 11 6.65685 11 5C11 3.34315 9.65685 2 8 2C6.34315 2 5 3.34315 5 5C5 6.65685 6.34315 8 8 8Z" stroke="#666666" strokeWidth="1.5"/>
+                    <path d="M2 14C2 11.7909 4.68629 10 8 10C11.3137 10 14 11.7909 14 14" stroke="#666666" strokeWidth="1.5" strokeLinecap="round"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Row 2: Barang */}
+          <div>
+            <label className="block mb-2.5" style={{ color: '#333333', fontSize: '14px', fontWeight: 600, marginBottom: '12px' }}>
+              Barang
+            </label>
+            <button
+              type="button"
+              onClick={handleBarangClick}
+              style={{
+                width: '100%',
+                padding: '12px 16px',
+                border: '1px solid #2F5F7C',
+                borderRadius: '8px',
+                background: '#FFFFFF',
+                color: '#2F5F7C',
+                fontSize: '14px',
+                fontWeight: 500,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '8px',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = '#F0F7FF';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = '#FFFFFF';
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M8 3V13M3 8H13" stroke="#2F5F7C" strokeWidth="2" strokeLinecap="round"/>
+              </svg>
+              <span>Tambahkan Barang</span>
+            </button>
+            {/* Display selected products */}
+            {formData.barang && (
+              <div style={{ marginTop: '12px', padding: '12px', background: '#F9F9F9', borderRadius: '8px', fontSize: '14px', color: '#333333' }}>
+                {formData.barang}
+              </div>
+            )}
+          </div>
+
+          {/* Row 3: Catatan Barang */}
+          <div>
+            <label className="block mb-2.5" style={{ color: '#333333', fontSize: '14px', fontWeight: 600 }}>
+              Catatan Barang
+            </label>
+            <textarea
+              name="catatanBarang"
+              value={formData.catatanBarang}
+              onChange={handleChange}
+              placeholder="Ketik catatan barang disini..."
+              className="w-full px-4 py-3 border rounded-lg focus:outline-none resize-none"
+              style={{ 
+                fontSize: '14px', 
+                color: formData.catatanBarang ? '#000000' : '#AAAAAA', 
+                minHeight: '100px',
+                fontFamily: 'inherit',
+                borderColor: '#E0E0E0',
+                borderRadius: '8px',
+                background: '#FFFFFF'
+              }}
+            />
+          </div>
+
+          {/* Row 4: Tanggal Pinjam and Tanggal Kembali */}
+          <div style={{ display: 'flex', gap: '16px' }}>
+            {/* Tanggal Pinjam */}
+            <div style={{ flex: 1 }}>
+              <label className="block mb-2.5" style={{ color: '#333333', fontSize: '14px', fontWeight: 600 }}>
+                Tanggal Pinjam
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  name="tanggalPinjam"
+                  value={formData.tanggalPinjam}
+                  onChange={handleChange}
+                  placeholder="DD/MM/YY"
+                  className="w-full px-4 py-3 border rounded-lg focus:outline-none"
+                  style={{ 
+                    fontSize: '14px', 
+                    color: formData.tanggalPinjam ? '#000000' : '#AAAAAA', 
+                    height: '48px',
+                    paddingRight: '40px',
+                    borderColor: '#E0E0E0',
+                    borderRadius: '8px',
+                    background: '#FFFFFF'
+                  }}
+                />
+                <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2H4C2.89543 2 2 2.89543 2 4V12C2 13.1046 2.89543 14 4 14H12C13.1046 14 14 13.1046 14 12V4C14 2.89543 13.1046 2 12 2Z" stroke="#666666" strokeWidth="1.5"/>
+                    <path d="M2 6H14" stroke="#666666" strokeWidth="1.5"/>
+                    <path d="M5 2V6" stroke="#666666" strokeWidth="1.5"/>
+                    <path d="M11 2V6" stroke="#666666" strokeWidth="1.5"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            {/* Tanggal Kembali */}
+            <div style={{ flex: 1 }}>
+              <label className="block mb-2.5" style={{ color: '#333333', fontSize: '14px', fontWeight: 600 }}>
+                Tanggal Kembali
+              </label>
+              <div className="relative">
+                <input
+                  type="text"
+                  name="tanggalKembali"
+                  value={formData.tanggalKembali}
+                  onChange={handleChange}
+                  placeholder="DD/MM/YY"
+                  className="w-full px-4 py-3 border rounded-lg focus:outline-none"
+                  style={{ 
+                    fontSize: '14px', 
+                    color: formData.tanggalKembali ? '#000000' : '#AAAAAA', 
+                    height: '48px',
+                    paddingRight: '40px',
+                    borderColor: '#E0E0E0',
+                    borderRadius: '8px',
+                    background: '#FFFFFF'
+                  }}
+                />
+                <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2H4C2.89543 2 2 2.89543 2 4V12C2 13.1046 2.89543 14 4 14H12C13.1046 14 14 13.1046 14 12V4C14 2.89543 13.1046 2 12 2Z" stroke="#666666" strokeWidth="1.5"/>
+                    <path d="M2 6H14" stroke="#666666" strokeWidth="1.5"/>
+                    <path d="M5 2V6" stroke="#666666" strokeWidth="1.5"/>
+                    <path d="M11 2V6" stroke="#666666" strokeWidth="1.5"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            className="w-full rounded-lg font-semibold text-white transition-colors"
+            style={{
+              background: '#2F5F7C',
+              fontSize: '15px',
+              fontWeight: 600,
+              height: '48px',
+              marginTop: '8px',
+              borderRadius: '8px'
+            }}
+            onMouseEnter={(e) => e.currentTarget.style.background = '#254A63'}
+            onMouseLeave={(e) => e.currentTarget.style.background = '#2F5F7C'}
+          >
+            Ajukan peminjaman
+          </button>
+        </form>
+      </div>
+
+      {/* Modal */}
+      {isModalOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0, 0, 0, 0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+          }}
+          onClick={() => setIsModalOpen(false)}
+        >
+          <div
+            style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '12px',
+              padding: '24px',
+              width: '90%',
+              maxWidth: '600px',
+              maxHeight: '80vh',
+              overflow: 'auto',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Search Bar */}
+            <div style={{ marginBottom: '20px', position: 'relative' }}>
+              <input
+                type="text"
+                placeholder="Cari nama produk"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '12px 16px 12px 40px',
+                  border: '1px solid #E0E0E0',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  outline: 'none',
+                }}
+              />
+              <div style={{
+                position: 'absolute',
+                left: '12px',
+                top: '50%',
+                transform: 'translateY(-50%)',
+                pointerEvents: 'none',
+              }}>
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M7.33333 12.6667C10.2789 12.6667 12.6667 10.2789 12.6667 7.33333C12.6667 4.38781 10.2789 2 7.33333 2C4.38781 2 2 4.38781 2 7.33333C2 10.2789 4.38781 12.6667 7.33333 12.6667Z" stroke="#666666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M14 14L11.1 11.1" stroke="#666666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+            </div>
+
+            {/* Table */}
+            <div style={{ marginBottom: '20px', overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid #E0E0E0' }}>
+                    <th style={{ 
+                      padding: '12px', 
+                      textAlign: 'left', 
+                      fontSize: '14px', 
+                      fontWeight: 600, 
+                      color: '#333333' 
+                    }}>
+                      No
+                    </th>
+                    <th style={{ 
+                      padding: '12px', 
+                      textAlign: 'left', 
+                      fontSize: '14px', 
+                      fontWeight: 600, 
+                      color: '#333333' 
+                    }}>
+                      Nama Produk
+                    </th>
+                    <th style={{ 
+                      padding: '12px', 
+                      textAlign: 'left', 
+                      fontSize: '14px', 
+                      fontWeight: 600, 
+                      color: '#333333' 
+                    }}>
+                      Stok
+                    </th>
+                    <th style={{ 
+                      padding: '12px', 
+                      textAlign: 'left', 
+                      fontSize: '14px', 
+                      fontWeight: 600, 
+                      color: '#333333' 
+                    }}>
+                      Aksi
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredProducts.map((product, index) => (
+                    <tr key={product.id} style={{ borderBottom: '1px solid #F0F0F0' }}>
+                      <td style={{ padding: '12px', fontSize: '14px', color: '#333333' }}>
+                        {index + 1}
+                      </td>
+                      <td style={{ padding: '12px', fontSize: '14px', color: '#333333' }}>
+                        {product.nama}
+                      </td>
+                      <td style={{ padding: '12px', fontSize: '14px', color: '#333333' }}>
+                        {product.stok}
+                      </td>
+                      <td style={{ padding: '12px' }}>
+                        <button
+                          type="button"
+                          onClick={() => handleAddProduct(product)}
+                          disabled={selectedProducts.some(p => p.id === product.id)}
+                          style={{
+                            padding: '6px 16px',
+                            border: '1px solid #4A90E2',
+                            borderRadius: '6px',
+                            backgroundColor: selectedProducts.some(p => p.id === product.id) ? '#E0E0E0' : '#E8F4FD',
+                            color: selectedProducts.some(p => p.id === product.id) ? '#999999' : '#4A90E2',
+                            fontSize: '14px',
+                            fontWeight: 500,
+                            cursor: selectedProducts.some(p => p.id === product.id) ? 'not-allowed' : 'pointer',
+                            transition: 'all 0.2s',
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!selectedProducts.some(p => p.id === product.id)) {
+                              e.currentTarget.style.backgroundColor = '#D4EBFC';
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!selectedProducts.some(p => p.id === product.id)) {
+                              e.currentTarget.style.backgroundColor = '#E8F4FD';
+                            }
+                          }}
+                        >
+                          {selectedProducts.some(p => p.id === product.id) ? 'Ditambahkan' : 'Tambahkan'}
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Confirm Button */}
+            <button
+              type="button"
+              onClick={handleConfirm}
+              style={{
+                width: '100%',
+                padding: '12px',
+                backgroundColor: '#2F5F7C',
+                color: '#FFFFFF',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '15px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                transition: 'background-color 0.2s',
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#254A63'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2F5F7C'}
+            >
+              Konfirmasi
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
