@@ -1,17 +1,21 @@
 'use client';
 
+import { Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import moment from 'moment';
 
-export default function StrukPage() {
-  // Data contoh - nanti bisa diambil dari props atau state
+function StrukContent() {
+  const searchParams = useSearchParams();
+  
+  // Ambil data dari query params atau gunakan data default
   const receiptData = {
-    nomorResi: '21012026-001',
-    kategori: 'Siswa',
-    identitas: 'Adinda F - XII RPL B - 246151837063',
-    barang: '2 Flashdisk, 1 Raspberry',
-    catatanBarang: '-',
-    tanggalPinjam: '21 Januari 2026',
-    tanggalKembali: '21 Januari 2026',
+    nomorResi: searchParams.get('nomorResi') || '21012026-001',
+    kategori: searchParams.get('kategori') || 'Siswa',
+    identitas: searchParams.get('identitas') || 'Adinda F - XII RPL B - 246151837063',
+    barang: searchParams.get('barang') || '2 Flashdisk, 1 Raspberry',
+    catatanBarang: searchParams.get('catatanBarang') || '-',
+    tanggalPinjam: searchParams.get('tanggalPinjam') || moment().format('DD MMMM YYYY'),
+    tanggalKembali: searchParams.get('tanggalKembali') || moment().format('DD MMMM YYYY'),
   };
 
   const currentDate = moment().format('DD MMMM YYYY');
@@ -19,7 +23,7 @@ export default function StrukPage() {
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(135deg, rgba(173, 216, 230, 0.3) 0%, rgba(255, 182, 193, 0.3) 100%)',
+      background: '#FFFFFF',
       padding: '40px 20px',
       fontFamily: 'Outfit, sans-serif'
     }}>
@@ -27,74 +31,80 @@ export default function StrukPage() {
         maxWidth: '800px',
         margin: '0 auto'
       }}>
-        {/* Header */}
+        {/* Header - Logo Only */}
         <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '40px'
+          marginBottom: '32px'
         }}>
-          {/* Logo */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <img src="/logo.png" alt="Simpelab Logo" style={{ width: '40px', height: '40px' }} />
             <span style={{
               color: '#000000',
               fontSize: '24px',
-              fontWeight: 700
+              fontWeight: 700,
+              fontFamily: 'Outfit, sans-serif'
             }}>
               Simpelab
             </span>
           </div>
-
-          {/* Date */}
-          <div style={{
-            color: '#666666',
-            fontSize: '16px',
-            fontWeight: 400
-          }}>
-            {currentDate}
-          </div>
         </div>
-
-        {/* Title */}
-        <h1 style={{
-          textAlign: 'center',
-          color: '#000000',
-          fontSize: '32px',
-          fontWeight: 700,
-          marginBottom: '40px'
-        }}>
-          Struk Pengajuan
-        </h1>
 
         {/* Receipt Card */}
         <div style={{
           background: '#FFFFFF',
           borderRadius: '16px',
-          padding: 0,
-          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+          padding: '32px',
+          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)'
         }}>
-          {/* Nomor Resi Section */}
+          {/* Title with Date */}
           <div style={{
-            background: '#F5F5F5',
-            padding: '20px 24px',
-            borderTopLeftRadius: '16px',
-            borderTopRightRadius: '16px',
             display: 'flex',
             justifyContent: 'space-between',
-            alignItems: 'center'
+            alignItems: 'baseline',
+            marginBottom: '24px',
+            paddingBottom: '0'
+          }}>
+            <h1 style={{
+              color: '#000000',
+              fontSize: '28px',
+              fontWeight: 700,
+              margin: 0,
+              fontFamily: 'Outfit, sans-serif'
+            }}>
+              Struk Pengajuan
+            </h1>
+            <div style={{
+              color: '#666666',
+              fontSize: '14px',
+              fontWeight: 400,
+              fontFamily: 'Outfit, sans-serif'
+            }}>
+              {currentDate}
+            </div>
+          </div>
+
+          {/* Nomor Resi Section - Nested Box */}
+          <div style={{
+            background: '#F5F5F5',
+            padding: '16px 20px',
+            borderRadius: '12px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '24px'
           }}>
             <span style={{
               color: '#000000',
-              fontSize: '16px',
-              fontWeight: 400
+              fontSize: '15px',
+              fontWeight: 500,
+              fontFamily: 'Outfit, sans-serif'
             }}>
               Nomor Resi
             </span>
             <span style={{
               color: '#000000',
-              fontSize: '16px',
-              fontWeight: 700
+              fontSize: '15px',
+              fontWeight: 700,
+              fontFamily: 'Outfit, sans-serif'
             }}>
               {receiptData.nomorResi}
             </span>
@@ -102,25 +112,32 @@ export default function StrukPage() {
 
           {/* Details Section */}
           <div style={{
-            padding: '24px'
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px'
           }}>
             {/* Kategori */}
             <div style={{
               display: 'flex',
               justifyContent: 'space-between',
-              marginBottom: '20px'
+              alignItems: 'flex-start'
             }}>
               <span style={{
                 color: '#666666',
-                fontSize: '16px',
-                fontWeight: 400
+                fontSize: '15px',
+                fontWeight: 400,
+                fontFamily: 'Outfit, sans-serif'
               }}>
                 Kategori
               </span>
               <span style={{
                 color: '#000000',
-                fontSize: '16px',
-                fontWeight: 400
+                fontSize: '15px',
+                fontWeight: 400,
+                fontFamily: 'Outfit, sans-serif',
+                textAlign: 'right',
+                flex: 1,
+                marginLeft: '16px'
               }}>
                 {receiptData.kategori}
               </span>
@@ -130,21 +147,25 @@ export default function StrukPage() {
             <div style={{
               display: 'flex',
               justifyContent: 'space-between',
-              marginBottom: '20px'
+              alignItems: 'flex-start'
             }}>
               <span style={{
                 color: '#666666',
-                fontSize: '16px',
-                fontWeight: 400
+                fontSize: '15px',
+                fontWeight: 400,
+                fontFamily: 'Outfit, sans-serif'
               }}>
                 Identitas
               </span>
               <span style={{
                 color: '#000000',
-                fontSize: '16px',
+                fontSize: '15px',
                 fontWeight: 400,
+                fontFamily: 'Outfit, sans-serif',
                 textAlign: 'right',
-                maxWidth: '60%'
+                flex: 1,
+                marginLeft: '16px',
+                maxWidth: '65%'
               }}>
                 {receiptData.identitas}
               </span>
@@ -154,21 +175,25 @@ export default function StrukPage() {
             <div style={{
               display: 'flex',
               justifyContent: 'space-between',
-              marginBottom: '20px'
+              alignItems: 'flex-start'
             }}>
               <span style={{
                 color: '#666666',
-                fontSize: '16px',
-                fontWeight: 400
+                fontSize: '15px',
+                fontWeight: 400,
+                fontFamily: 'Outfit, sans-serif'
               }}>
                 Barang
               </span>
               <span style={{
                 color: '#000000',
-                fontSize: '16px',
+                fontSize: '15px',
                 fontWeight: 400,
+                fontFamily: 'Outfit, sans-serif',
                 textAlign: 'right',
-                maxWidth: '60%'
+                flex: 1,
+                marginLeft: '16px',
+                maxWidth: '65%'
               }}>
                 {receiptData.barang}
               </span>
@@ -178,19 +203,24 @@ export default function StrukPage() {
             <div style={{
               display: 'flex',
               justifyContent: 'space-between',
-              marginBottom: '20px'
+              alignItems: 'flex-start'
             }}>
               <span style={{
                 color: '#666666',
-                fontSize: '16px',
-                fontWeight: 400
+                fontSize: '15px',
+                fontWeight: 400,
+                fontFamily: 'Outfit, sans-serif'
               }}>
                 Catatan Barang
               </span>
               <span style={{
                 color: '#000000',
-                fontSize: '16px',
-                fontWeight: 400
+                fontSize: '15px',
+                fontWeight: 400,
+                fontFamily: 'Outfit, sans-serif',
+                textAlign: 'right',
+                flex: 1,
+                marginLeft: '16px'
               }}>
                 {receiptData.catatanBarang}
               </span>
@@ -200,19 +230,24 @@ export default function StrukPage() {
             <div style={{
               display: 'flex',
               justifyContent: 'space-between',
-              marginBottom: '20px'
+              alignItems: 'flex-start'
             }}>
               <span style={{
                 color: '#666666',
-                fontSize: '16px',
-                fontWeight: 400
+                fontSize: '15px',
+                fontWeight: 400,
+                fontFamily: 'Outfit, sans-serif'
               }}>
                 Tanggal Pinjam
               </span>
               <span style={{
                 color: '#000000',
-                fontSize: '16px',
-                fontWeight: 400
+                fontSize: '15px',
+                fontWeight: 400,
+                fontFamily: 'Outfit, sans-serif',
+                textAlign: 'right',
+                flex: 1,
+                marginLeft: '16px'
               }}>
                 {receiptData.tanggalPinjam}
               </span>
@@ -221,19 +256,25 @@ export default function StrukPage() {
             {/* Tanggal Kembali */}
             <div style={{
               display: 'flex',
-              justifyContent: 'space-between'
+              justifyContent: 'space-between',
+              alignItems: 'flex-start'
             }}>
               <span style={{
                 color: '#666666',
-                fontSize: '16px',
-                fontWeight: 400
+                fontSize: '15px',
+                fontWeight: 400,
+                fontFamily: 'Outfit, sans-serif'
               }}>
                 Tanggal Kembali
               </span>
               <span style={{
                 color: '#000000',
-                fontSize: '16px',
-                fontWeight: 400
+                fontSize: '15px',
+                fontWeight: 400,
+                fontFamily: 'Outfit, sans-serif',
+                textAlign: 'right',
+                flex: 1,
+                marginLeft: '16px'
               }}>
                 {receiptData.tanggalKembali}
               </span>
@@ -242,5 +283,23 @@ export default function StrukPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function StrukPage() {
+  return (
+    <Suspense fallback={
+      <div style={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        fontFamily: 'Outfit, sans-serif'
+      }}>
+        <div>Loading...</div>
+      </div>
+    }>
+      <StrukContent />
+    </Suspense>
   );
 }

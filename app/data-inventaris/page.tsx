@@ -115,23 +115,79 @@ export default function DataInventarisPage() {
         padding: '32px',
         minHeight: '100vh'
       }}>
-        {/* Page Header */}
-        <h1 style={{
-          color: '#333333',
-          fontSize: '32px',
-          fontWeight: 700,
-          marginBottom: '8px'
+        {/* Page Header with Create Buttons */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          marginBottom: '32px',
+          flexWrap: 'wrap',
+          gap: '16px'
         }}>
-          Data Inventaris
-        </h1>
-        <p style={{
-          color: '#666666',
-          fontSize: '16px',
-          fontWeight: 400,
-          marginBottom: '32px'
-        }}>
-          Kelola dan lihat semua data inventaris
-        </p>
+          <div>
+            <h1 style={{
+              color: '#333333',
+              fontSize: '32px',
+              fontWeight: 700,
+              marginBottom: '8px',
+              margin: 0
+            }}>
+              Data Inventaris
+            </h1>
+            <p style={{
+              color: '#666666',
+              fontSize: '16px',
+              fontWeight: 400,
+              margin: 0
+            }}>
+              Kelola dan lihat semua data inventaris
+            </p>
+          </div>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <Link
+              href="/create-produk"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 20px',
+                background: '#2F516A',
+                color: '#FFFFFF',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: 600,
+                textDecoration: 'none',
+                fontFamily: 'inherit',
+                border: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              <span>+</span>
+              Create Produk
+            </Link>
+            <Link
+              href="/create-barang"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 20px',
+                background: '#2F516A',
+                color: '#FFFFFF',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: 600,
+                textDecoration: 'none',
+                fontFamily: 'inherit',
+                border: 'none',
+                cursor: 'pointer'
+              }}
+            >
+              <span>+</span>
+              Create Detail Produk
+            </Link>
+          </div>
+        </div>
 
         {/* Tabs and Filter Bar */}
         <div style={{
@@ -176,7 +232,7 @@ export default function DataInventarisPage() {
               Produk
             </button>
 
-            {/* Barang Tab */}
+            {/* Detail Produk Tab */}
             <button
               onClick={() => setActiveTab('barang')}
               style={{
@@ -199,7 +255,7 @@ export default function DataInventarisPage() {
                 <path d="M4 6L10 2L16 6M4 6V16C4 16.5523 4.44772 17 5 17H15C15.5523 17 16 16.5523 16 16V6M4 6L10 10L16 6" stroke={activeTab === 'barang' ? '#2F516A' : '#666666'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                 <path d="M10 10V18" stroke={activeTab === 'barang' ? '#2F516A' : '#666666'} strokeWidth="1.5" strokeLinecap="round" />
               </svg>
-              Barang
+              Detail Produk
             </button>
           </div>
 
@@ -350,7 +406,7 @@ export default function DataInventarisPage() {
               }}>
                 <thead>
                   <tr style={{
-                    background: '#F9F9F9',
+                    background: '#E3F2FD',
                     borderBottom: '1px solid #E0E0E0'
                   }}>
                     <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>No</th>
@@ -361,7 +417,8 @@ export default function DataInventarisPage() {
                         <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Kode Produk</th>
                         <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Merk</th>
                         <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Tipe/Model</th>
-                        <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Kuantitas</th>
+                        <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Stok</th>
+                        <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Jumlah Barang</th>
                       </>
                     ) : (
                       <>
@@ -388,26 +445,60 @@ export default function DataInventarisPage() {
                               display: 'inline-block',
                               padding: '4px 12px',
                               borderRadius: '12px',
-                              background: '#F5F5F5',
+                              background: '#E3F2FD',
                               color: '#333333',
                               fontSize: '12px',
                               fontWeight: 500
                             }}>
-                              {p.kategori === 'ASET' ? 'Aset' : p.kategori === 'HP' ? 'Habis Pakai' : p.kategori}
+                              {p.kategori === 'ASET' ? 'Asset' : p.kategori === 'HP' ? 'Habis Pakai' : p.kategori}
                             </span>
                           </td>
                           <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{p.nama}</td>
                           <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{p.kode}</td>
                           <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{p.merk}</td>
                           <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{p.model}</td>
-                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{p.kuantitas}</td>
                           <td style={{ padding: '16px' }}>
-                            {/* Actions */}
+                            <span style={{
+                              display: 'inline-block',
+                              padding: '4px 10px',
+                              borderRadius: '12px',
+                              background: '#D1FAE5',
+                              color: '#065F46',
+                              fontSize: '12px',
+                              fontWeight: 500
+                            }}>
+                              {p.kuantitas}
+                            </span>
+                          </td>
+                          <td style={{ padding: '16px' }}>
+                            <span style={{
+                              display: 'inline-block',
+                              padding: '4px 10px',
+                              borderRadius: '12px',
+                              background: '#FFF7ED',
+                              color: '#9A3412',
+                              fontSize: '12px',
+                              fontWeight: 500
+                            }}>
+                              {p.kuantitas} Items
+                            </span>
+                          </td>
+                          <td style={{ padding: '16px' }}>
                             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                              <button style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}>
+                              <button style={{ border: 'none', background: 'transparent', cursor: 'pointer' }} title="View">
                                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                                   <path d="M8 3C4.66667 3 2 5.66667 2 9C2 12.3333 4.66667 15 8 15C11.3333 15 14 12.3333 14 9C14 5.66667 11.3333 3 8 3Z" stroke="#666666" strokeWidth="1.5" />
                                   <circle cx="8" cy="9" r="2" stroke="#666666" strokeWidth="1.5" />
+                                </svg>
+                              </button>
+                              <button style={{ border: 'none', background: 'transparent', cursor: 'pointer' }} title="Edit">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M11.333 2A1.886 1.886 0 0 1 14 4.667L5 13.667l-3 1 1-3L11.333 2z" stroke="#666666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                              </button>
+                              <button style={{ border: 'none', background: 'transparent', cursor: 'pointer' }} title="Delete">
+                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                  <path d="M2 4h12M5 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1m2 0v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4h10zM6 7v4M10 7v4" stroke="#666666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                                 </svg>
                               </button>
                             </div>
