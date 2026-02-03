@@ -450,7 +450,7 @@ export default function DataInventarisPage() {
                               fontSize: '12px',
                               fontWeight: 500
                             }}>
-                              {p.kategori === 'ASET' ? 'Asset' : p.kategori === 'HP' ? 'Habis Pakai' : p.kategori}
+                              {p.kategori === 'ASET' ? 'Aset' : p.kategori === 'HP' ? 'Habis Pakai' : p.kategori}
                             </span>
                           </td>
                           <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{p.nama}</td>
