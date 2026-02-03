@@ -160,3 +160,11 @@ model DetailProdukPengajuan {
 
   @@map("tb_detail_produk_pengajuan")
 }
+
+model Aktivitas {
+  id                  String @id @default(uuid())
+  waktu               DateTime @map("waktu")
+  kategori            String @map("kategori")
+  keterangan          String @map("keterangan")
+  id_admin            String
+}
