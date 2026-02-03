@@ -1,6 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+import moment from 'moment';
 import illustration from '@/app/illustration.png';
 
 interface Product {
@@ -10,6 +12,7 @@ interface Product {
 }
 
 export default function BorrowingForm() {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     kategori: '',
     identitas: '',
@@ -57,7 +60,40 @@ export default function BorrowingForm() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission
+    
+    // Validasi form
+    if (!formData.kategori || !formData.identitas || !formData.barang) {
+      alert('Mohon lengkapi semua field yang wajib diisi');
+      return;
+    }
+
+    // Format tanggal
+    const tanggalPinjamFormatted = formData.tanggalPinjam 
+      ? moment(formData.tanggalPinjam).format('DD MMMM YYYY')
+      : moment().format('DD MMMM YYYY');
+    
+    const tanggalKembaliFormatted = formData.tanggalKembali
+      ? moment(formData.tanggalKembali).format('DD MMMM YYYY')
+      : '-';
+
+    // Generate nomor resi (format: DDMMYYYY-XXX)
+    const nomorResi = moment().format('DDMMYYYY') + '-' + String(Math.floor(Math.random() * 999) + 1).padStart(3, '0');
+
+    // Format kategori
+    const kategoriFormatted = formData.kategori === 'guru' ? 'Guru' : 'Siswa';
+
+    // Redirect ke halaman struk dengan query params
+    const params = new URLSearchParams({
+      nomorResi: nomorResi,
+      kategori: kategoriFormatted,
+      identitas: formData.identitas,
+      barang: formData.barang,
+      catatanBarang: formData.catatanBarang || '-',
+      tanggalPinjam: tanggalPinjamFormatted,
+      tanggalKembali: tanggalKembaliFormatted,
+    });
+
+    router.push(`/struk?${params.toString()}`);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -162,6 +198,29 @@ export default function BorrowingForm() {
         padding: '60px 80px',
         justifyContent: 'center'
       }}>
+        {/* Header */}
+        <div style={{ marginBottom: '32px' }}>
+          <h1 style={{
+            fontSize: '32px',
+            fontWeight: 700,
+            color: '#333333',
+            marginBottom: '8px',
+            margin: 0,
+            fontFamily: 'Outfit, sans-serif'
+          }}>
+            Ajukan Peminjaman
+          </h1>
+          <p style={{
+            fontSize: '14px',
+            color: '#666666',
+            margin: 0,
+            lineHeight: '1.5',
+            fontFamily: 'Outfit, sans-serif'
+          }}>
+            Ajukan peminjaman alat lab dengan cepat dan terintegrasi dalam satu sistem
+          </p>
+        </div>
+
         {/* Form */}
         <form 
           onSubmit={handleSubmit} 
@@ -176,7 +235,7 @@ export default function BorrowingForm() {
           <div style={{ display: 'flex', gap: '16px' }}>
             {/* Kategori Peminjam */}
             <div style={{ flex: 1 }}>
-              <label className="block mb-2.5" style={{ color: '#333333', fontSize: '14px', fontWeight: 600, marginBottom: '12px' }}>
+              <label className="block mb-2.5" style={{ color: '#333333', fontSize: '14px', fontWeight: 600, marginBottom: '12px', display: 'block' }}>
                 Kategori Peminjam
               </label>
               <div style={{ display: 'flex', gap: '20px' }}>
@@ -217,7 +276,7 @@ export default function BorrowingForm() {
 
             {/* Identitas */}
             <div style={{ flex: 1 }}>
-              <label className="block mb-2.5" style={{ color: '#333333', fontSize: '14px', fontWeight: 600 }}>
+              <label className="block mb-2.5" style={{ color: '#333333', fontSize: '14px', fontWeight: 600, marginBottom: '12px', display: 'block' }}>
                 Identitas
               </label>
               <div className="relative">
@@ -250,7 +309,7 @@ export default function BorrowingForm() {
 
           {/* Row 2: Barang */}
           <div>
-            <label className="block mb-2.5" style={{ color: '#333333', fontSize: '14px', fontWeight: 600, marginBottom: '12px' }}>
+            <label className="block mb-2.5" style={{ color: '#333333', fontSize: '14px', fontWeight: 600, marginBottom: '12px', display: 'block' }}>
               Barang
             </label>
             <button
@@ -259,7 +318,7 @@ export default function BorrowingForm() {
               style={{
                 width: '100%',
                 padding: '12px 16px',
-                border: '1px solid #2F5F7C',
+                border: '1px solid #4A90E2',
                 borderRadius: '8px',
                 background: '#FFFFFF',
                 color: '#2F5F7C',
@@ -274,9 +333,11 @@ export default function BorrowingForm() {
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = '#F0F7FF';
+                e.currentTarget.style.borderColor = '#2F5F7C';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = '#FFFFFF';
+                e.currentTarget.style.borderColor = '#4A90E2';
               }}
             >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -294,7 +355,7 @@ export default function BorrowingForm() {
 
           {/* Row 3: Catatan Barang */}
           <div>
-            <label className="block mb-2.5" style={{ color: '#333333', fontSize: '14px', fontWeight: 600 }}>
+            <label className="block mb-2.5" style={{ color: '#333333', fontSize: '14px', fontWeight: 600, marginBottom: '12px', display: 'block' }}>
               Catatan Barang
             </label>
             <textarea
@@ -319,16 +380,15 @@ export default function BorrowingForm() {
           <div style={{ display: 'flex', gap: '16px' }}>
             {/* Tanggal Pinjam */}
             <div style={{ flex: 1 }}>
-              <label className="block mb-2.5" style={{ color: '#333333', fontSize: '14px', fontWeight: 600 }}>
+              <label className="block mb-2.5" style={{ color: '#333333', fontSize: '14px', fontWeight: 600, marginBottom: '12px', display: 'block' }}>
                 Tanggal Pinjam
               </label>
               <div className="relative">
                 <input
-                  type="text"
+                  type="date"
                   name="tanggalPinjam"
                   value={formData.tanggalPinjam}
                   onChange={handleChange}
-                  placeholder="DD/MM/YY"
                   className="w-full px-4 py-3 border rounded-lg focus:outline-none"
                   style={{ 
                     fontSize: '14px', 
@@ -353,16 +413,15 @@ export default function BorrowingForm() {
 
             {/* Tanggal Kembali */}
             <div style={{ flex: 1 }}>
-              <label className="block mb-2.5" style={{ color: '#333333', fontSize: '14px', fontWeight: 600 }}>
+              <label className="block mb-2.5" style={{ color: '#333333', fontSize: '14px', fontWeight: 600, marginBottom: '12px', display: 'block' }}>
                 Tanggal Kembali
               </label>
               <div className="relative">
                 <input
-                  type="text"
+                  type="date"
                   name="tanggalKembali"
                   value={formData.tanggalKembali}
                   onChange={handleChange}
-                  placeholder="DD/MM/YY"
                   className="w-full px-4 py-3 border rounded-lg focus:outline-none"
                   style={{ 
                     fontSize: '14px', 
@@ -439,7 +498,7 @@ export default function BorrowingForm() {
             <div style={{ marginBottom: '20px', position: 'relative' }}>
               <input
                 type="text"
-                placeholder="Cari nama produk"
+                placeholder="Cari produk..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 style={{
@@ -449,6 +508,7 @@ export default function BorrowingForm() {
                   borderRadius: '8px',
                   fontSize: '14px',
                   outline: 'none',
+                  fontFamily: 'Outfit, sans-serif',
                 }}
               />
               <div style={{
@@ -469,13 +529,14 @@ export default function BorrowingForm() {
             <div style={{ marginBottom: '20px', overflowX: 'auto' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr style={{ borderBottom: '1px solid #E0E0E0' }}>
+                  <tr style={{ background: '#E3F2FD' }}>
                     <th style={{ 
                       padding: '12px', 
                       textAlign: 'left', 
                       fontSize: '14px', 
                       fontWeight: 600, 
-                      color: '#333333' 
+                      color: '#000000',
+                      fontFamily: 'Outfit, sans-serif'
                     }}>
                       No
                     </th>
@@ -484,7 +545,8 @@ export default function BorrowingForm() {
                       textAlign: 'left', 
                       fontSize: '14px', 
                       fontWeight: 600, 
-                      color: '#333333' 
+                      color: '#000000',
+                      fontFamily: 'Outfit, sans-serif'
                     }}>
                       Nama Produk
                     </th>
@@ -493,7 +555,8 @@ export default function BorrowingForm() {
                       textAlign: 'left', 
                       fontSize: '14px', 
                       fontWeight: 600, 
-                      color: '#333333' 
+                      color: '#000000',
+                      fontFamily: 'Outfit, sans-serif'
                     }}>
                       Stok
                     </th>
@@ -502,7 +565,8 @@ export default function BorrowingForm() {
                       textAlign: 'left', 
                       fontSize: '14px', 
                       fontWeight: 600, 
-                      color: '#333333' 
+                      color: '#000000',
+                      fontFamily: 'Outfit, sans-serif'
                     }}>
                       Aksi
                     </th>
@@ -510,14 +574,31 @@ export default function BorrowingForm() {
                 </thead>
                 <tbody>
                   {filteredProducts.map((product, index) => (
-                    <tr key={product.id} style={{ borderBottom: '1px solid #F0F0F0' }}>
-                      <td style={{ padding: '12px', fontSize: '14px', color: '#333333' }}>
+                    <tr key={product.id} style={{ borderBottom: '1px solid #E0E0E0' }}>
+                      <td style={{ 
+                        padding: '12px', 
+                        fontSize: '14px', 
+                        color: '#000000',
+                        fontFamily: 'Outfit, sans-serif'
+                      }}>
                         {index + 1}
                       </td>
-                      <td style={{ padding: '12px', fontSize: '14px', color: '#333333' }}>
+                      <td style={{ 
+                        padding: '12px', 
+                        fontSize: '16px', 
+                        color: '#2F516A',
+                        fontWeight: 400,
+                        lineHeight: '100%',
+                        fontFamily: 'Outfit, sans-serif'
+                      }}>
                         {product.nama}
                       </td>
-                      <td style={{ padding: '12px', fontSize: '14px', color: '#333333' }}>
+                      <td style={{ 
+                        padding: '12px', 
+                        fontSize: '14px', 
+                        color: '#000000',
+                        fontFamily: 'Outfit, sans-serif'
+                      }}>
                         {product.stok}
                       </td>
                       <td style={{ padding: '12px' }}>
@@ -527,23 +608,24 @@ export default function BorrowingForm() {
                           disabled={selectedProducts.some(p => p.id === product.id)}
                           style={{
                             padding: '6px 16px',
-                            border: '1px solid #4A90E2',
+                            border: '1px solid #2F516A',
                             borderRadius: '6px',
-                            backgroundColor: selectedProducts.some(p => p.id === product.id) ? '#E0E0E0' : '#E8F4FD',
-                            color: selectedProducts.some(p => p.id === product.id) ? '#999999' : '#4A90E2',
+                            backgroundColor: selectedProducts.some(p => p.id === product.id) ? '#E0E0E0' : '#FFFFFF',
+                            color: selectedProducts.some(p => p.id === product.id) ? '#999999' : '#2F516A',
                             fontSize: '14px',
                             fontWeight: 500,
                             cursor: selectedProducts.some(p => p.id === product.id) ? 'not-allowed' : 'pointer',
                             transition: 'all 0.2s',
+                            fontFamily: 'Outfit, sans-serif',
                           }}
                           onMouseEnter={(e) => {
                             if (!selectedProducts.some(p => p.id === product.id)) {
-                              e.currentTarget.style.backgroundColor = '#D4EBFC';
+                              e.currentTarget.style.backgroundColor = '#F5F5F5';
                             }
                           }}
                           onMouseLeave={(e) => {
                             if (!selectedProducts.some(p => p.id === product.id)) {
-                              e.currentTarget.style.backgroundColor = '#E8F4FD';
+                              e.currentTarget.style.backgroundColor = '#FFFFFF';
                             }
                           }}
                         >
@@ -557,26 +639,28 @@ export default function BorrowingForm() {
             </div>
 
             {/* Confirm Button */}
-            <button
-              type="button"
-              onClick={handleConfirm}
-              style={{
-                width: '100%',
-                padding: '12px',
-                backgroundColor: '#2F5F7C',
-                color: '#FFFFFF',
-                border: 'none',
-                borderRadius: '8px',
-                fontSize: '15px',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'background-color 0.2s',
-              }}
-              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#254A63'}
-              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2F5F7C'}
-            >
-              Konfirmasi
-            </button>
+            <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+              <button
+                type="button"
+                onClick={handleConfirm}
+                style={{
+                  padding: '12px 24px',
+                  backgroundColor: '#2F5F7C',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: '8px',
+                  fontSize: '15px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s',
+                  fontFamily: 'Outfit, sans-serif',
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#254A63'}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#2F5F7C'}
+              >
+                Konfirmasi
+              </button>
+            </div>
           </div>
         </div>
       )}

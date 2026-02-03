@@ -22,8 +22,12 @@ const createPengajuanSchema = z.object({
     .or(z.literal("")),
 });
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const limitParam = searchParams.get("limit");
+    const take = limitParam ? Math.min(parseInt(limitParam, 10) || 10, 500) : 10;
+
     const pengajuan = await prisma.pengajuan.findMany({
       include: {
         peminjam: true,
@@ -36,7 +40,7 @@ export async function GET() {
       orderBy: {
         tanggal_pinjam: "desc",
       },
-      take: 10, // Limit to recent 10 for dashboard/activity feed
+      take,
     });
 
     return NextResponse.json(pengajuan);
