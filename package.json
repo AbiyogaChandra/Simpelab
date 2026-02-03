@@ -39,5 +39,11 @@
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
     "typescript": "^5"
+  },
+  "overrides": {
+    "@prisma/dev": {
+      "hono": ">4.11.6",
+      "lodash": ">4.17.21"
+    }
   }
 }
