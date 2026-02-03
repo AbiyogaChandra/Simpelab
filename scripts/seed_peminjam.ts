@@ -1,13 +1,23 @@
 import { prisma } from "@lib/prisma";
 
 async function main() {
-    const peminjam = await prisma.peminjam.create({
-        data: {
+    const peminjam = await prisma.peminjam.createMany({
+        data: [{
             nama: 'Abed Greatvo Suseno',
             nomor_induk: '24613/1835.063',
             kategori: 'SISWA',
             kelas: 'XII RPL B',
-        },
+        }, {
+            nama: 'Abiyoga Permana Chandra',
+            nomor_induk: '24614/1836.063',
+            kategori: 'SISWA',
+            kelas: 'XII RPL B',
+        }, {
+            nama: 'Adinda Fathimatuzzahro',
+            nomor_induk: '24615/1837.063',
+            kategori: 'SISWA',
+            kelas: 'XII RPL B',
+        }],
     });
     console.log('Created Peminjam:', peminjam);
 }
