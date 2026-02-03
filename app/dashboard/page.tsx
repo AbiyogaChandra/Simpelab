@@ -335,28 +335,27 @@ export default function DashboardPage() {
                   <div key={product.id} style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '16px',
+                    gap: '10px',
                     padding: '16px',
-                    background: '#F9F9F9',
-                    borderRadius: '8px'
+                    background: '#F0F7FC',
+                    borderRadius: '12px'
                   }}>
                     <div style={{
-                      width: '48px',
-                      height: '48px',
-                      background: '#F5F5F5',
-                      borderRadius: '8px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
+                      color: '#ffffff',
+                      width: '45px',
+                      height: '45px',
+                      padding: '12px',
+                      backgroundColor: '#A7CEEB',
+                      borderRadius: '8px'
                     }}>
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="4" y="4" width="16" height="16" rx="2" stroke="#666666" strokeWidth="1.5" />
-                        <path d="M8 8H16M8 12H16M8 16H12" stroke="#666666" strokeWidth="1.5" strokeLinecap="round" />
-                      </svg>
+                      <iconify-icon
+                        icon="gridicons:product"
+                        height="20"
+                      />
                     </div>
                     <div style={{ flex: 1 }}>
                       <div style={{
-                        color: '#333333',
+                        color: '#588FB7',
                         fontSize: '16px',
                         fontWeight: 700,
                         marginBottom: '4px'
@@ -364,24 +363,31 @@ export default function DashboardPage() {
                         {product.nama}
                       </div>
                       <div style={{
-                        color: '#666666',
+                        color: '#C0C0B3',
                         fontSize: '14px',
                         fontWeight: 400
                       }}>
                         {product.kode}
                       </div>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'right',
+                      gap: '4px'
+                    }}>
                       <div style={{
-                        color: '#333333',
-                        fontSize: '16px',
-                        fontWeight: 700,
-                        marginBottom: '4px'
+                        color: '#2C364B',
+                        backgroundColor: '#FEFEFE',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        fontWeight: 400,
+                        padding: '2px 8px'
                       }}>
                         {product.kategori === 'ASET' ? 'Aset' : product.kategori === 'HP' ? 'Habis Pakai' : product.kategori}
                       </div>
                       <div style={{
-                        color: '#666666',
+                        color: '#647589',
                         fontSize: '14px',
                         fontWeight: 400
                       }}>
