@@ -45,7 +45,7 @@ export default function Sidebar() {
             )
         },
         {
-            name: 'Aktifitas',
+            name: 'Aktivitas',
             path: '/log-perubahan',
             icon: (active: boolean) => (
                 <iconify-icon
