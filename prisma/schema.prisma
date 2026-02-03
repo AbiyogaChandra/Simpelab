@@ -1,17 +1,13 @@
 // This is your Prisma schema file,
 // learn more about it in the docs: https://pris.ly/d/prisma-schema
 
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client"
-  output   = "../app/generated/prisma"
+  output   = "../generated/prisma"
 }
 
 datasource db {
   provider = "sqlite"
-  url      = env("DATABASE_URL")
 }
 
 // Enums
@@ -159,4 +155,12 @@ model DetailProdukPengajuan {
   detail_produk    DetailProduk    @relation(fields: [id_detail_produk], references: [id])
 
   @@map("tb_detail_produk_pengajuan")
+}
+
+model Aktivitas {
+  id         String   @id @default(uuid())
+  waktu      DateTime @map("waktu")
+  kategori   String   @map("kategori")
+  keterangan String   @map("keterangan")
+  id_admin   String
 }

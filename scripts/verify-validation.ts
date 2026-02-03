@@ -1,6 +1,4 @@
 
-import { PrismaClient } from "@prisma/client";
-
 // Mocking fetch since we are running in a script context, not browser
 // In a real e2e 'local' test we'd hit localhost:3000, but ensuring the server is running is tricky.
 // Alternatively, we can assume the server IS running (user's `bun dev`) and fetch against localhost.

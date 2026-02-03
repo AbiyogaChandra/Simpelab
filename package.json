@@ -2,6 +2,7 @@
   "name": "projek-ukk",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -14,7 +15,8 @@
     "db:studio": "prisma studio"
   },
   "dependencies": {
-    "@prisma/client": "^6.19.2",
+    "@prisma/adapter-better-sqlite3": "^7.3.0",
+    "@prisma/client": "^7.3.0",
     "bcrypt": "^6.0.0",
     "dotenv": "^17.2.3",
     "iconify-icon": "^3.0.2",
@@ -27,15 +29,22 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/bcrypt": "^6.0.0",
-    "@types/node": "^20",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^20.19.31",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "autoprefixer": "^10.4.24",
     "eslint": "^9",
     "eslint-config-next": "^16.1.4",
-    "prisma": "^6.19.2",
+    "prisma": "^7.3.0",
     "tailwindcss": "^4",
     "tsx": "^4.21.0",
     "typescript": "^5"
+  },
+  "overrides": {
+    "@prisma/dev": {
+      "hono": ">4.11.6",
+      "lodash": ">4.17.21"
+    }
   }
 }

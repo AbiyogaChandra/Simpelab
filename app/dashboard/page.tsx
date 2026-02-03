@@ -27,7 +27,7 @@ export default function DashboardPage() {
         const totalProduk = products.length;
         const totalAsset = products.filter((p: any) => p.kategori === 'ASET').length;
         const totalHabisPakai = products.filter((p: any) => p.kategori === 'HP').length;
-        
+
         // Calculate Stock: Sum of kuantitas for HP, + 1 for each Asset (assuming each asset entry is a unit, OR use kuantitas if assets have it)
         // Based on schema, Asset also has kuantitas.
         const totalStok = products.reduce((sum: number, p: any) => sum + (p.kuantitas || 0), 0);
@@ -46,7 +46,7 @@ export default function DashboardPage() {
         // Fetch Activities (Pengajuan)
         const actRes = await fetch('/api/pengajuan');
         const activities = await actRes.json();
-        
+
         setRecentActivities(activities);
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
@@ -139,17 +139,21 @@ export default function DashboardPage() {
               fontWeight: 400,
               opacity: 0.9
             }}>
-              Asset & habis pakai
+              Aset & habis pakai
             </div>
             <div style={{
+              color: '#FFFFFF',
               position: 'absolute',
               top: '16px',
               right: '16px',
-              opacity: 0.3
+              padding: '12px',
+              backgroundColor: '#437090',
+              borderRadius: '8px'
             }}>
-              <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="8" y="8" width="32" height="32" rx="4" stroke="white" strokeWidth="2" />
-              </svg>
+              <iconify-icon
+                icon="gridicons:product"
+                height="24"
+              />
             </div>
           </div>
 
@@ -167,7 +171,7 @@ export default function DashboardPage() {
               fontWeight: 400,
               marginBottom: '8px'
             }}>
-              Total Asset
+              Total Aset
             </div>
             <div style={{
               color: '#FFFFFF',
@@ -186,15 +190,18 @@ export default function DashboardPage() {
               Barang
             </div>
             <div style={{
+              color: '#FFFFFF',
               position: 'absolute',
               top: '16px',
               right: '16px',
-              opacity: 0.3
+              padding: '12px',
+              backgroundColor: '#D363A1',
+              borderRadius: '8px'
             }}>
-              <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="24" cy="24" r="8" stroke="white" strokeWidth="2" />
-                <path d="M24 8V16M24 32V40M8 24H16M32 24H40" stroke="white" strokeWidth="2" strokeLinecap="round" />
-              </svg>
+              <iconify-icon
+                icon="carbon:asset"
+                height="24"
+              />
             </div>
           </div>
 
@@ -231,14 +238,18 @@ export default function DashboardPage() {
               Barang
             </div>
             <div style={{
+              color: '#000000',
               position: 'absolute',
               top: '16px',
               right: '16px',
-              opacity: 0.3
+              padding: '12px',
+              backgroundColor: '#F3F3F3',
+              borderRadius: '8px'
             }}>
-              <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M16 20L24 12L32 20M16 28L24 36L32 28" stroke="#333333" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+              <iconify-icon
+                icon="fa7-solid:cart-arrow-down"
+                height="24"
+              />
             </div>
           </div>
 
@@ -275,15 +286,18 @@ export default function DashboardPage() {
               Barang tersedia
             </div>
             <div style={{
+              color: '#000000',
               position: 'absolute',
               top: '16px',
               right: '16px',
-              opacity: 0.3
+              padding: '12px',
+              backgroundColor: '#F3F3F3',
+              borderRadius: '8px'
             }}>
-              <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="12" y="12" width="12" height="12" rx="2" stroke="#333333" strokeWidth="2" />
-                <rect x="24" y="24" width="12" height="12" rx="2" stroke="#333333" strokeWidth="2" />
-              </svg>
+              <iconify-icon
+                icon="mingcute:stock-line"
+                height="24"
+              />
             </div>
           </div>
         </div>
@@ -321,28 +335,27 @@ export default function DashboardPage() {
                   <div key={product.id} style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '16px',
+                    gap: '10px',
                     padding: '16px',
-                    background: '#F9F9F9',
-                    borderRadius: '8px'
+                    background: '#F0F7FC',
+                    borderRadius: '12px'
                   }}>
                     <div style={{
-                      width: '48px',
-                      height: '48px',
-                      background: '#F5F5F5',
-                      borderRadius: '8px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
+                      color: '#ffffff',
+                      width: '45px',
+                      height: '45px',
+                      padding: '12px',
+                      backgroundColor: '#A7CEEB',
+                      borderRadius: '8px'
                     }}>
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <rect x="4" y="4" width="16" height="16" rx="2" stroke="#666666" strokeWidth="1.5" />
-                        <path d="M8 8H16M8 12H16M8 16H12" stroke="#666666" strokeWidth="1.5" strokeLinecap="round" />
-                      </svg>
+                      <iconify-icon
+                        icon="gridicons:product"
+                        height="20"
+                      />
                     </div>
                     <div style={{ flex: 1 }}>
                       <div style={{
-                        color: '#333333',
+                        color: '#588FB7',
                         fontSize: '16px',
                         fontWeight: 700,
                         marginBottom: '4px'
@@ -350,24 +363,31 @@ export default function DashboardPage() {
                         {product.nama}
                       </div>
                       <div style={{
-                        color: '#666666',
+                        color: '#C0C0B3',
                         fontSize: '14px',
                         fontWeight: 400
                       }}>
                         {product.kode}
                       </div>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'right',
+                      gap: '4px'
+                    }}>
                       <div style={{
-                        color: '#333333',
-                        fontSize: '16px',
-                        fontWeight: 700,
-                        marginBottom: '4px'
+                        color: '#2C364B',
+                        backgroundColor: '#FEFEFE',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        fontWeight: 400,
+                        padding: '2px 8px'
                       }}>
                         {product.kategori === 'ASET' ? 'Aset' : product.kategori === 'HP' ? 'Habis Pakai' : product.kategori}
                       </div>
                       <div style={{
-                        color: '#666666',
+                        color: '#647589',
                         fontSize: '14px',
                         fontWeight: 400
                       }}>
