@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@lib/prisma";
 import { z } from "zod";
-
-const prisma = new PrismaClient();
 
 const detailProdukSchema = z.object({
     id_produk: z.coerce.number().int().positive(),

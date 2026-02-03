@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
-import { PrismaClient } from "@prisma/client";
+import { prisma } from "@lib/prisma";
 import { z } from "zod";
-
-const prisma = new PrismaClient();
 
 const produkSchema = z.object({
     kategori: z.enum(["ASET", "HP"]),
@@ -20,6 +18,7 @@ export async function GET() {
         const produk = await prisma.produk.findMany();
         return NextResponse.json(produk);
     } catch (error) {
+        console.error("GET Error:", error);
         return NextResponse.json(
             { error: "Failed to fetch products" },
             { status: 500 }
@@ -56,6 +55,7 @@ export async function POST(request: Request) {
 
         return NextResponse.json(produk, { status: 201 });
     } catch (error) {
+        console.error("POST Error:", error);
         return NextResponse.json(
             { error: "Failed to create product" },
             { status: 500 }
