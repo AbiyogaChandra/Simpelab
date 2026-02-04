@@ -47,6 +47,7 @@ model Admin {
   password String @map("password") // VARCHAR 255
 
   sesi Sesi[]
+  aktivitas Aktivitas[]
 
   @@map("tb_admin")
 }
@@ -163,4 +164,8 @@ model Aktivitas {
   kategori   String   @map("kategori")
   keterangan String   @map("keterangan")
   id_admin   String
+
+  admin Admin @relation(fields: [id_admin], references: [id])
+
+  @@map("tb_aktivitas")
 }
