@@ -17,7 +17,7 @@ cd projek-ukk
 3. Download dependencies.
 
 ```bash
-npm install
+npm ci
 ```
 
 4. Generate Prisma Client.
