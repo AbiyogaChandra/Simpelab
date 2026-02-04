@@ -7,9 +7,10 @@ import { usePathname } from 'next/navigation';
 export default function Sidebar() {
     const pathname = usePathname();
 
-    const isActive = (path: string) => {
+    const isActive = (path: string, extraPaths?: string[]) => {
         if (path === '/' && pathname === '/') return true;
         if (path !== '/' && pathname.startsWith(path)) return true;
+        if (extraPaths && extraPaths.some(p => pathname.startsWith(p))) return true;
         return false;
     };
 
@@ -27,6 +28,7 @@ export default function Sidebar() {
         {
             name: 'Data Inventaris',
             path: '/data-inventaris',
+            extraPaths: ['/create-produk', '/create-barang'],
             icon: (active: boolean) => (
                 <iconify-icon
                     icon="bxs:data"
@@ -71,7 +73,7 @@ export default function Sidebar() {
             {/* Navigation Menu */}
             <div className="flex-1 p-4 flex flex-col gap-1">
                 {menuItems.map((item) => {
-                    const active = isActive(item.path);
+                    const active = isActive(item.path, (item as any).extraPaths);
                     return (
                         <Link key={item.path} href={item.path} className="no-underline">
                             <div
