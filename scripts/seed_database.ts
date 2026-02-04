@@ -64,25 +64,6 @@ async function main() {
         }],
     });
     console.log('Created Lokasi:', lokasi);
-    const detailProduk = await prisma.detailProduk.createMany({
-        data: [{
-            id_produk: 1,
-            id_lokasi: 1,
-            status: 'TERSEDIA',
-            kondisi: 'BAIK'
-        }, {
-            id_produk: 2,
-            id_lokasi: 2,
-            status: 'TERSEDIA',
-            kondisi: 'BAIK'
-        }, {
-            id_produk: 3,
-            id_lokasi: 3,
-            status: 'TERSEDIA',
-            kondisi: 'BAIK'
-        }],
-    });
-    console.log('Created Detail Produk:', detailProduk);
 }
 
 main()
