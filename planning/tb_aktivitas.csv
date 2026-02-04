@@ -1,0 +1,7 @@
+﻿tb_aktivitas,,,,
+No,Nama Atribut,Tipe Atribut,Ukuran Atribut,Keterangan
+1,id,uuid,36,"PRIMARY KEY, RANDOM UUID"
+2,waktu,timestamp,timestamp,
+3,kategori,varchar,30,
+4,keterangan,varchar,255,
+5,id_admin,uuid,36,FOREIGN KEY (tb_admin)
