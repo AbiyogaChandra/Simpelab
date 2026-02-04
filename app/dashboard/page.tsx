@@ -389,7 +389,8 @@ export default function DashboardPage() {
                       <div style={{
                         color: '#647589',
                         fontSize: '14px',
-                        fontWeight: 400
+                        fontWeight: 400,
+                        textAlign: 'right'
                       }}>
                         Stok : {product.kuantitas}
                       </div>
