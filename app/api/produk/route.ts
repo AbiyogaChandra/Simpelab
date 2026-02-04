@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@lib/prisma";
 import { z } from "zod";
+import { logActivity } from "@/lib/activity";
 
 const produkSchema = z.object({
     kategori: z.enum(["ASET", "HP"]),
@@ -52,6 +53,13 @@ export async function POST(request: Request) {
                 kuantitas: kuantitas || 0,
             },
         });
+
+        // Log Activity
+        await logActivity(
+            prisma,
+            "Tambah, Barang",
+            `Unit baru: ${nama} - ${kode}`
+        );
 
         return NextResponse.json(produk, { status: 201 });
     } catch (error) {

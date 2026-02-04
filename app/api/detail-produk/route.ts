@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@lib/prisma";
 import { z } from "zod";
+import { logActivity } from "@/lib/activity";
 
 const detailProdukSchema = z.object({
     id_produk: z.coerce.number().int().positive(),
@@ -69,6 +70,13 @@ export async function POST(request: Request) {
                 },
             },
         });
+
+        // Log Activity
+        await logActivity(
+            prisma,
+            "Tambah, Barang",
+            `Unit detail baru: ID Produk ${id_produk} - SN: ${kode_seri || 'N/A'}`,
+        );
 
         return NextResponse.json(detailProduk, { status: 201 });
     } catch (error) {

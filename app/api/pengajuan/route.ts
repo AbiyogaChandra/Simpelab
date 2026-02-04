@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@lib/prisma";
 import { z } from "zod";
+import { logActivity } from "@/lib/activity";
 
 const createPengajuanSchema = z.object({
   id_peminjam: z.string().uuid(),
@@ -196,6 +197,13 @@ export async function POST(request: Request) {
           }
         }
       }
+
+      // Log Activity
+      await logActivity(
+        tx, // Pass transaction client
+        "Pengajuan, Barang",
+        `Pengajuan baru: ${kode_resi} - ${items.length} item`,
+      );
 
       return newPengajuan;
     });

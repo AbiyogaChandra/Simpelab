@@ -225,10 +225,10 @@ export default function DataInventarisPage() {
                 marginBottom: '-2px'
               }}
             >
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <rect x="4" y="4" width="12" height="12" rx="2" stroke={activeTab === 'produk' ? '#2F516A' : '#666666'} strokeWidth="1.5" />
-                <path d="M8 8H12M8 12H12" stroke={activeTab === 'produk' ? '#2F516A' : '#666666'} strokeWidth="1.5" strokeLinecap="round" />
-              </svg>
+              <iconify-icon
+                icon="gridicons:product"
+                height="24"
+              />
               Produk
             </button>
 
@@ -251,10 +251,10 @@ export default function DataInventarisPage() {
                 marginBottom: '-2px'
               }}
             >
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M4 6L10 2L16 6M4 6V16C4 16.5523 4.44772 17 5 17H15C15.5523 17 16 16.5523 16 16V6M4 6L10 10L16 6" stroke={activeTab === 'barang' ? '#2F516A' : '#666666'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M10 10V18" stroke={activeTab === 'barang' ? '#2F516A' : '#666666'} strokeWidth="1.5" strokeLinecap="round" />
-              </svg>
+              <iconify-icon
+                icon="ep:goods-filled"
+                height="24"
+              />
               Detail Produk
             </button>
           </div>

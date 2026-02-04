@@ -43,8 +43,8 @@ export default function DashboardPage() {
         const sortedProducts = [...products].sort((a: any, b: any) => b.id - a.id).slice(0, 5);
         setRecentProducts(sortedProducts);
 
-        // Fetch Activities (Pengajuan)
-        const actRes = await fetch('/api/pengajuan');
+        // Fetch Activities (Aktivitas)
+        const actRes = await fetch('/api/aktivitas');
         const activities = await actRes.json();
 
         setRecentActivities(activities);
@@ -424,36 +424,42 @@ export default function DashboardPage() {
               {recentActivities.length === 0 ? (
                 <p style={{ color: '#999' }}>Belum ada aktivitas.</p>
               ) : (
-                recentActivities.map((activity, index) => (
+                recentActivities.map((activity: any) => ( // Typings could be improved
                   <div key={activity.id} style={{
-                    display: 'flex',
-                    alignItems: 'flex-start',
-                    gap: '12px'
+                    background: '#FFFFFF',
+                    border: '1px solid #E5E7EB',
+                    borderRadius: '12px',
+                    padding: '16px',
                   }}>
+                    {/* Tags */}
+                    <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
+                      {activity.tags && activity.tags.map((tag: string, idx: number) => (
+                        <span key={idx} style={{
+                          fontSize: '12px',
+                          padding: '4px 8px',
+                          borderRadius: '4px',
+                          background: '#F3F4F6',
+                          color: '#374151'
+                        }}>
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+
                     <div style={{
-                      width: '8px',
-                      height: '8px',
-                      borderRadius: '50%',
-                      background: '#3B82F6',
-                      marginTop: '6px',
-                      flexShrink: 0
-                    }} />
-                    <div style={{ flex: 1 }}>
-                      <div style={{
-                        color: '#333333',
-                        fontSize: '16px',
-                        fontWeight: 400,
-                        marginBottom: '4px'
-                      }}>
-                        Peminjaman: {activity.peminjam?.nama} - {activity.kode_resi}
-                      </div>
-                      <div style={{
-                        color: '#666666',
-                        fontSize: '14px',
-                        fontWeight: 400
-                      }}>
-                        {moment(activity.tanggal_pinjam).format('DD MMM YYYY, HH:mm')} | {activity.status}
-                      </div>
+                       color: '#333333',
+                       fontSize: '16px',
+                       fontWeight: 500,
+                       marginBottom: '4px'
+                    }}>
+                      {activity.message}
+                    </div>
+                    <div style={{
+                      color: '#666666',
+                      fontSize: '14px',
+                      fontWeight: 400
+                    }}>
+                       {activity.timestamp} | oleh {activity.user}
                     </div>
                   </div>
                 ))
