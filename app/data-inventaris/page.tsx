@@ -14,6 +14,7 @@ interface Produk {
   model: string;
   spesifikasi: string;
   kuantitas: number;
+  stok?: number;
 }
 
 interface DetailProduk {
@@ -467,7 +468,7 @@ export default function DataInventarisPage() {
                               fontSize: '12px',
                               fontWeight: 500
                             }}>
-                              {p.kuantitas}
+                              {p.stok ?? p.kuantitas}
                             </span>
                           </td>
                           <td style={{ padding: '16px' }}>
@@ -633,11 +634,14 @@ export default function DataInventarisPage() {
             minHeight: '400px'
           }}>
             {/* Box Icon */}
-            <div style={{ marginBottom: '24px', opacity: 0.5 }}>
-              <svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M20 30L60 10L100 30M20 30V90C20 92.2091 21.7909 94 24 94H96C98.2091 94 100 92.2091 100 90V30M20 30L60 50L100 30" stroke="#666666" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-                <path d="M60 50V94" stroke="#666666" strokeWidth="3" strokeLinecap="round" />
-              </svg>
+            <div style={{ 
+              marginBottom: '24px', 
+              color: '#6D7D90'
+            }}>
+              <iconify-icon
+                icon="mingcute:empty-box-line"
+                height="80"
+              />
             </div>
 
             {/* Main Text */}

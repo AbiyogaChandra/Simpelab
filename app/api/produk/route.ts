@@ -16,8 +16,28 @@ const produkSchema = z.object({
 
 export async function GET() {
     try {
-        const produk = await prisma.produk.findMany();
-        return NextResponse.json(produk);
+        const produk = await prisma.produk.findMany({
+            include: {
+                _count: {
+                    select: {
+                        detail_produk: {
+                            where: {
+                                status: {
+                                    not: 'DIPINJAM'
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        const formattedProduk = produk.map(p => ({
+            ...p,
+            stok: p.kategori === 'HP' ? p.kuantitas : p._count.detail_produk
+        }));
+
+        return NextResponse.json(formattedProduk);
     } catch (error) {
         console.error("GET Error:", error);
         return NextResponse.json(
