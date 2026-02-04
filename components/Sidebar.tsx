@@ -62,9 +62,9 @@ export default function Sidebar() {
         <div className="fixed left-0 top-0 w-[280px] bg-white flex flex-col h-screen shadow-[2px_0_4px_rgba(0,0,0,0.05)] z-[1000] overflow-y-auto">
             {/* Header */}
             <div className="p-6 border-b border-[#E5E5E5]">
-                <div className="flex items-center gap-3">
-                    <Image src="/logo.webp" alt="Simpelab Logo" width={32} height={32} />
-                    <span className="text-[#333333] text-xl font-bold">
+                <div className="flex items-center gap-2">
+                    <Image src="/logo.webp" alt="Simpelab Logo" width={56} height={56} />
+                    <span className="text-[#2F516A] text-2xl font-bold">
                         Simpelab
                     </span>
                 </div>
