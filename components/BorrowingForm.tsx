@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image'
 import moment from 'moment';
-import illustration from '@/app/illustration.png';
 
 interface Product {
   id: number;
@@ -11,26 +11,86 @@ interface Product {
   stok: number;
 }
 
+interface SelectedProduct extends Product {
+  quantity: number;
+}
+
+interface Peminjam {
+  id: string;
+  nama: string;
+  nomor_induk: string;
+}
+
 export default function BorrowingForm() {
   const router = useRouter();
   const [formData, setFormData] = useState({
-    kategori: '',
+    kategori: 'siswa', // Default select
     identitas: '',
-    barang: '',
+    barang: '', // Used for hidden field or legacy
     catatanBarang: '',
-    tanggalPinjam: '',
-    tanggalKembali: '',
+    tanggalPinjam: moment().format('YYYY-MM-DD'),
+    tanggalKembali: moment().format('YYYY-MM-DD'),
   });
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<SelectedProduct[]>([]);
+  
+  // Data State
+  const [products, setProducts] = useState<Product[]>([]);
+  const [peminjamList, setPeminjamList] = useState<Peminjam[]>([]);
+  const [selectedPeminjam, setSelectedPeminjam] = useState<Peminjam | null>(null);
+  const [showPeminjamDropdown, setShowPeminjamDropdown] = useState(false);
 
-  // Dummy data produk
-  const [products] = useState<Product[]>([
-    { id: 1, nama: 'Flashdisk USB C', stok: 3 },
-    { id: 2, nama: 'HDMI', stok: 2 },
-  ]);
+  // Fetch Products
+  const fetchProducts = async () => {
+    try {
+      const res = await fetch('/api/produk');
+      if (res.ok) {
+        const data = await res.json();
+        
+        // Group products by name
+        const groupedMap = new Map<string, Product>();
+        
+        data.forEach((p: any) => {
+            const existing = groupedMap.get(p.nama);
+            const stock = p.stok ?? p.kuantitas;
+            
+            if (existing) {
+                // Accumulate stock
+                existing.stok += stock;
+            } else {
+                groupedMap.set(p.nama, {
+                    id: p.id, // Use the first ID encountered for this name
+                    nama: p.nama,
+                    stok: stock
+                });
+            }
+        });
+        
+        setProducts(Array.from(groupedMap.values()));
+      }
+    } catch (error) {
+       console.error("Failed to fetch products", error);
+    }
+  };
+
+  // Fetch Peminjam
+  const fetchPeminjam = async (query: string, kategori: string) => {
+      if (!query) {
+          setPeminjamList([]);
+          return;
+      }
+      try {
+          const res = await fetch(`/api/peminjam?query=${query}&kategori=${kategori}`);
+          if (res.ok) {
+              const data = await res.json();
+              setPeminjamList(data);
+          }
+      } catch (error) {
+          console.error("Failed to fetch peminjam", error);
+      }
+  };
 
   // Filter produk berdasarkan search query
   const filteredProducts = products.filter(product =>
@@ -38,70 +98,122 @@ export default function BorrowingForm() {
   );
 
   const handleAddProduct = (product: Product) => {
-    if (!selectedProducts.find(p => p.id === product.id)) {
-      setSelectedProducts([...selectedProducts, product]);
+    if (!selectedProducts.find(p => p.nama === product.nama)) {
+      setSelectedProducts([...selectedProducts, { ...product, quantity: 1 }]);
     }
+  };
+  
+  const handleRemoveProduct = (productId: number) => {
+    setSelectedProducts(selectedProducts.filter(p => p.id !== productId));
+  };
+
+  const handleQuantityChange = (productId: number, newQuantity: number) => {
+    if (newQuantity < 1) return;
+    setSelectedProducts(selectedProducts.map(p => 
+      p.id === productId ? { ...p, quantity: newQuantity } : p
+    ));
   };
 
   const handleConfirm = () => {
-    const productNames = selectedProducts.map(p => p.nama).join(', ');
-    setFormData({
-      ...formData,
-      barang: productNames,
-    });
+    // Legacy support if needed, but we use selectedProducts directly now
     setIsModalOpen(false);
-    setSelectedProducts([]);
     setSearchQuery('');
   };
 
   const handleBarangClick = () => {
+    if (products.length === 0) fetchProducts();
     setIsModalOpen(true);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validasi form
-    if (!formData.kategori || !formData.identitas || !formData.barang) {
-      alert('Mohon lengkapi semua field yang wajib diisi');
+    if (!formData.kategori || !selectedPeminjam || selectedProducts.length === 0) {
+      alert('Mohon lengkapi identitas valid dan pilih minimal satu barang');
       return;
     }
 
-    // Format tanggal
-    const tanggalPinjamFormatted = formData.tanggalPinjam 
-      ? moment(formData.tanggalPinjam).format('DD MMMM YYYY')
-      : moment().format('DD MMMM YYYY');
-    
-    const tanggalKembaliFormatted = formData.tanggalKembali
-      ? moment(formData.tanggalKembali).format('DD MMMM YYYY')
-      : '-';
+    try {
+        const payload = {
+            id_peminjam: selectedPeminjam.id,
+            items: selectedProducts.map(p => ({
+                id_produk: p.id,
+                kuantitas: p.quantity
+            })),
+            alasan: formData.catatanBarang || 'Peminjaman Lab', // Use clarification as reason
+            tanggal_pinjam: new Date(formData.tanggalPinjam).toISOString(),
+            tanggal_kembali: formData.tanggalKembali ? new Date(formData.tanggalKembali).toISOString() : '',
+        };
+        
+        const res = await fetch('/api/pengajuan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
 
-    // Generate nomor resi (format: DDMMYYYY-XXX)
-    const nomorResi = moment().format('DDMMYYYY') + '-' + String(Math.floor(Math.random() * 999) + 1).padStart(3, '0');
+        if (!res.ok) {
+            const err = await res.json();
+            throw new Error(err.error || 'Failed to submit');
+        }
 
-    // Format kategori
-    const kategoriFormatted = formData.kategori === 'guru' ? 'Guru' : 'Siswa';
+        const data = await res.json();
 
-    // Redirect ke halaman struk dengan query params
-    const params = new URLSearchParams({
-      nomorResi: nomorResi,
-      kategori: kategoriFormatted,
-      identitas: formData.identitas,
-      barang: formData.barang,
-      catatanBarang: formData.catatanBarang || '-',
-      tanggalPinjam: tanggalPinjamFormatted,
-      tanggalKembali: tanggalKembaliFormatted,
-    });
+        // Format dates for receipt query params (display format)
+        const tanggalPinjamFormatted = moment(formData.tanggalPinjam).format('DD MMMM YYYY');
+        const tanggalKembaliFormatted = formData.tanggalKembali 
+            ? moment(formData.tanggalKembali).format('DD MMMM YYYY') 
+            : '-';
+        
+        const kategoriFormatted = formData.kategori === 'guru' ? 'Guru' : 'Siswa';
+        
+        const barangFormatted = selectedProducts.map(p => `${p.quantity} ${p.nama}`).join(', ');
 
-    router.push(`/struk?${params.toString()}`);
+        const params = new URLSearchParams({
+            nomorResi: data.kode_resi || 'PENDING',
+            kategori: kategoriFormatted,
+            identitas: `${selectedPeminjam.nama} - ${selectedPeminjam.nomor_induk}`,
+            barang: barangFormatted,
+            catatanBarang: formData.catatanBarang || '-',
+            tanggalPinjam: tanggalPinjamFormatted,
+            tanggalKembali: tanggalKembaliFormatted,
+        });
+
+        router.push(`/struk?${params.toString()}`);
+
+    } catch (error: any) {
+        alert(error.message);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const target = e.target as HTMLInputElement;
-    setFormData({
-      ...formData,
-      [target.name]: target.value,
-    });
+    const { name, value } = target;
+
+    if (name === 'tanggalPinjam') {
+        setFormData(prev => ({
+            ...prev,
+            tanggalPinjam: value,
+            tanggalKembali: value // Auto-sync tanggal kembali
+        }));
+    } else {
+        setFormData(prev => ({
+            ...prev,
+            [name]: value,
+        }));
+    }
+
+    if (name === 'identitas') {
+        fetchPeminjam(value, formData.kategori);
+        setShowPeminjamDropdown(true);
+        setSelectedPeminjam(null); // Reset selection on typing
+    }
+  };
+
+  const handlePeminjamSelect = (peminjam: Peminjam) => {
+      setFormData({ ...formData, identitas: peminjam.nama });
+      setSelectedPeminjam(peminjam);
+      setShowPeminjamDropdown(false);
   };
 
   return (
@@ -109,22 +221,23 @@ export default function BorrowingForm() {
       {/* Left Panel - Dark Teal */}
       <div style={{
         width: '50%',
-        background: '#20B2AA',
-        position: 'relative',
+        height: '100vh',
+        background: '#425B67',
+        position: 'sticky',
+        top: 0,
         overflow: 'hidden'
       }}>
         {/* Illustration Image - Full Background */}
-        <img 
-          src={typeof illustration === 'string' ? illustration : illustration.src} 
-          alt="Lab Illustration" 
+        <Image 
+          src="/illustration.webp"
+          alt="Lab Illustration"
+          fill
           style={{ 
             position: 'absolute',
             top: 0,
             left: 0,
-            width: '100%',
-            height: '100%',
             objectFit: 'cover',
-            objectPosition: 'center',
+            objectPosition: 'bottom',
             display: 'block'
           }}
         />
@@ -143,15 +256,15 @@ export default function BorrowingForm() {
             <div style={{ 
               display: 'inline-flex', 
               alignItems: 'center', 
-              gap: '12px',
+              gap: '6px',
               background: '#FFFFFF',
-              borderRadius: '12px',
-              padding: '12px 20px'
+              borderRadius: '24px',
+              padding: '4px 8px'
             }}>
-              <img src="/logo.png" alt="Simpelab Logo" style={{ width: '32px', height: '32px' }} />
+              <Image src="/logo.webp" alt="Simpelab Logo" width={56} height={56} />
               <span style={{ 
-                color: '#20B2AA', 
-                fontSize: '20px', 
+                color: '#2F516A', 
+                fontSize: '26px', 
                 fontWeight: 700,
                 fontFamily: 'Outfit, sans-serif'
               }}>
@@ -279,12 +392,17 @@ export default function BorrowingForm() {
               <label className="block mb-2.5" style={{ color: '#333333', fontSize: '14px', fontWeight: 600, marginBottom: '12px', display: 'block' }}>
                 Identitas
               </label>
-              <div className="relative">
+                <div className="relative">
                 <input
                   type="text"
                   name="identitas"
                   value={formData.identitas}
                   onChange={handleChange}
+                  onFocus={() => {
+                     if (formData.identitas) fetchPeminjam(formData.identitas, formData.kategori);
+                     setShowPeminjamDropdown(true);
+                  }}
+                  onBlur={() => setTimeout(() => setShowPeminjamDropdown(false), 200)} // Delay to allow click
                   placeholder="Ketik identitas anda"
                   className="w-full px-4 py-3 border rounded-lg focus:outline-none"
                   style={{ 
@@ -296,6 +414,7 @@ export default function BorrowingForm() {
                     borderRadius: '8px',
                     background: '#FFFFFF'
                   }}
+                  autoComplete="off"
                 />
                 <div className="absolute left-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -303,6 +422,43 @@ export default function BorrowingForm() {
                     <path d="M2 14C2 11.7909 4.68629 10 8 10C11.3137 10 14 11.7909 14 14" stroke="#666666" strokeWidth="1.5" strokeLinecap="round"/>
                   </svg>
                 </div>
+                
+                {/* Dropdown */}
+                {showPeminjamDropdown && peminjamList.length > 0 && (
+                    <div style={{
+                        position: 'absolute',
+                        top: '100%',
+                        left: 0,
+                        right: 0,
+                        backgroundColor: '#FFFFFF',
+                        border: '1px solid #E0E0E0',
+                        borderRadius: '8px',
+                        marginTop: '4px',
+                        maxHeight: '200px',
+                        overflowY: 'auto',
+                        zIndex: 10,
+                        boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                    }}>
+                        {peminjamList.map((p) => (
+                            <div
+                                key={p.id}
+                                onClick={() => handlePeminjamSelect(p)}
+                                style={{
+                                    padding: '10px 16px',
+                                    fontSize: '14px',
+                                    color: '#333333',
+                                    cursor: 'pointer',
+                                    borderBottom: '1px solid #F5F5F5'
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F9FAFB'}
+                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#FFFFFF'}
+                            >
+                                <div style={{ fontWeight: 500 }}>{p.nama}</div>
+                                <div style={{ fontSize: '12px', color: '#666666' }}>{p.nomor_induk}</div>
+                            </div>
+                        ))}
+                    </div>
+                )}
               </div>
             </div>
           </div>
@@ -312,45 +468,104 @@ export default function BorrowingForm() {
             <label className="block mb-2.5" style={{ color: '#333333', fontSize: '14px', fontWeight: 600, marginBottom: '12px', display: 'block' }}>
               Barang
             </label>
+            {/* Selected Products List */}
+            {selectedProducts.length > 0 && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '16px' }}>
+                    {selectedProducts.map((product, index) => (
+                         <div key={product.id} style={{
+                             background: '#FFFFFF',
+                             border: '1px solid #E0E0E0',
+                             borderRadius: '12px',
+                             padding: '16px',
+                         }}>
+                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                 <span style={{ fontSize: '14px', fontWeight: 600, color: '#333333' }}>
+                                     #{String(index + 1).padStart(2, '0')}
+                                 </span>
+                                 <button
+                                     type="button"
+                                     onClick={() => handleRemoveProduct(product.id)}
+                                     style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}
+                                 >
+                                     <svg width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                         <path d="M2 4h12M5 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1m2 0v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4h10zM6 7v4M10 7v4" stroke="#DC2626" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                     </svg>
+                                 </button>
+                             </div>
+
+                             <div style={{ marginBottom: '12px' }}>
+                                 <label style={{ display: 'block', fontSize: '12px', color: '#999999', marginBottom: '6px' }}>
+                                     Nama Produk
+                                 </label>
+                                 <div style={{
+                                     background: '#F5F5F5',
+                                     borderRadius: '8px',
+                                     padding: '10px 12px',
+                                     fontSize: '14px',
+                                     color: '#333333',
+                                     border: '1px solid #EEEEEE'
+                                 }}>
+                                     {product.nama}
+                                 </div>
+                             </div>
+
+                             <div>
+                                 <label style={{ display: 'block', fontSize: '12px', color: '#999999', marginBottom: '6px' }}>
+                                     Kuantitas
+                                 </label>
+                                 <input
+                                     type="number"
+                                     min="1"
+                                     value={product.quantity}
+                                     onChange={(e) => handleQuantityChange(product.id, parseInt(e.target.value) || 1)}
+                                     style={{
+                                         width: '100%',
+                                         borderRadius: '8px',
+                                         padding: '10px 12px',
+                                         fontSize: '14px',
+                                         color: '#333333',
+                                         border: '1px solid #E0E0E0',
+                                         outline: 'none'
+                                     }}
+                                 />
+                             </div>
+                         </div>
+                    ))}
+                </div>
+            )}
+
             <button
               type="button"
               onClick={handleBarangClick}
               style={{
                 width: '100%',
                 padding: '12px 16px',
-                border: '1px solid #4A90E2',
                 borderRadius: '8px',
                 background: '#FFFFFF',
-                color: '#2F5F7C',
+                color: '#2F516A',
                 fontSize: '14px',
-                fontWeight: 500,
+                fontWeight: 600,
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 gap: '8px',
                 transition: 'all 0.2s',
+                border: 'none',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.05)' 
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.backgroundColor = '#F0F7FF';
-                e.currentTarget.style.borderColor = '#2F5F7C';
+                e.currentTarget.style.backgroundColor = '#F8FAFC';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.backgroundColor = '#FFFFFF';
-                e.currentTarget.style.borderColor = '#4A90E2';
               }}
             >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M8 3V13M3 8H13" stroke="#2F5F7C" strokeWidth="2" strokeLinecap="round"/>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M12 5V19M5 12H19" stroke="#2F516A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
               <span>Tambahkan Barang</span>
             </button>
-            {/* Display selected products */}
-            {formData.barang && (
-              <div style={{ marginTop: '12px', padding: '12px', background: '#F9F9F9', borderRadius: '8px', fontSize: '14px', color: '#333333' }}>
-                {formData.barang}
-              </div>
-            )}
           </div>
 
           {/* Row 3: Catatan Barang */}
@@ -394,20 +609,11 @@ export default function BorrowingForm() {
                     fontSize: '14px', 
                     color: formData.tanggalPinjam ? '#000000' : '#AAAAAA', 
                     height: '48px',
-                    paddingRight: '40px',
                     borderColor: '#E0E0E0',
                     borderRadius: '8px',
                     background: '#FFFFFF'
                   }}
                 />
-                <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 2H4C2.89543 2 2 2.89543 2 4V12C2 13.1046 2.89543 14 4 14H12C13.1046 14 14 13.1046 14 12V4C14 2.89543 13.1046 2 12 2Z" stroke="#666666" strokeWidth="1.5"/>
-                    <path d="M2 6H14" stroke="#666666" strokeWidth="1.5"/>
-                    <path d="M5 2V6" stroke="#666666" strokeWidth="1.5"/>
-                    <path d="M11 2V6" stroke="#666666" strokeWidth="1.5"/>
-                  </svg>
-                </div>
               </div>
             </div>
 
@@ -422,25 +628,17 @@ export default function BorrowingForm() {
                   name="tanggalKembali"
                   value={formData.tanggalKembali}
                   onChange={handleChange}
+                  min={formData.tanggalPinjam} // Prevent dates before pinjam
                   className="w-full px-4 py-3 border rounded-lg focus:outline-none"
                   style={{ 
                     fontSize: '14px', 
                     color: formData.tanggalKembali ? '#000000' : '#AAAAAA', 
                     height: '48px',
-                    paddingRight: '40px',
                     borderColor: '#E0E0E0',
                     borderRadius: '8px',
                     background: '#FFFFFF'
                   }}
                 />
-                <div className="absolute right-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M12 2H4C2.89543 2 2 2.89543 2 4V12C2 13.1046 2.89543 14 4 14H12C13.1046 14 14 13.1046 14 12V4C14 2.89543 13.1046 2 12 2Z" stroke="#666666" strokeWidth="1.5"/>
-                    <path d="M2 6H14" stroke="#666666" strokeWidth="1.5"/>
-                    <path d="M5 2V6" stroke="#666666" strokeWidth="1.5"/>
-                    <path d="M11 2V6" stroke="#666666" strokeWidth="1.5"/>
-                  </svg>
-                </div>
               </div>
             </div>
           </div>

@@ -124,78 +124,16 @@ export async function POST(request: Request) {
         if (!produk) throw new Error(`Product ID ${item.id_produk} not found`);
 
         // Create DetailPengajuan
-        const detailPengajuan = await tx.detailPengajuan.create({
+        await tx.detailPengajuan.create({
           data: {
             id_pengajuan: newPengajuan.id,
             id_produk: item.id_produk,
             kuantitas: item.kuantitas,
           },
         });
-
-        // Logic for ASET vs HP
-        if (produk.kategori === "ASET") {
-          // For Assets, we try to find AVAILABLE units to assign
-          // If UI doesn't allow selecting specific units yet, we can either:
-          // a) Auto-assign available units up to requested quantity
-          // b) Create request without assigning units (Admin assigns later)
-          // Given the prompt "the Barang field should be searching from the produk table",
-          // implying generic product selection.
-          // Let's TRY to auto-assign available units to simulate "borrowing".
-
-          const availableUnits = await tx.detailProduk.findMany({
-            where: {
-              id_produk: item.id_produk,
-              status: "TERSEDIA",
-              kondisi: "BAIK", // Prefer good condition
-            },
-            take: item.kuantitas,
-          });
-
-          // Assign found units
-          for (const unit of availableUnits) {
-            await tx.detailProdukPengajuan.create({
-              data: {
-                id_detail_pengajuan: detailPengajuan.id,
-                id_detail_produk: unit.id,
-              },
-            });
-
-            // Update unit status
-            await tx.detailProduk.update({
-              where: { id: unit.id },
-              data: { status: "DIPINJAM" },
-            });
-          }
-
-          // If not enough units found, we just process what we can or throw?
-          // For now, let's proceed even if not fully assigned (Backorder style? or just 'Diajukan')
-          // Currently status is just 'DIAJUKAN', so maybe no immediate assignment needed?
-          // BUT prompt says "connect borrow form... create pengajuan...".
-          // Usually "Borrowing" implies taking it. I'll stick to auto-assign if possible.
-        } else if (produk.kategori === "HP") {
-          // For Habis Pakai, we typically decrement stock?
-          // Schema doesn't link DetailProduk for HP usually (no unique ID).
-          // So we just rely on DetailPengajuan quantity.
-          // Optionally decrement Produk.kuantitas
-          if (produk.kuantitas >= item.kuantitas) {
-            await tx.produk.update({
-              where: { id: item.id_produk },
-              data: {
-                kuantitas: { decrement: item.kuantitas },
-              },
-            });
-          } else {
-            // Not enough stock?
-            // Allow for now or throw? Let's allow but maybe warn or just go negative/zero?
-            // Safest is to just update.
-            await tx.produk.update({
-              where: { id: item.id_produk },
-              data: {
-                kuantitas: { decrement: item.kuantitas },
-              },
-            });
-          }
-        }
+        
+        // Note: We do NOT assign specific DetailProduk (ASET) or decrement stock (HP) yet.
+        // This is strictly a request ("Pengajuan") to be processed by an Admin later.
       }
 
       // Log Activity
