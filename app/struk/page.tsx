@@ -3,10 +3,11 @@
 import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import moment from 'moment';
+import Image from 'next/image';
 
 function StrukContent() {
   const searchParams = useSearchParams();
-  
+
   // Ambil data dari query params atau gunakan data default
   const receiptData = {
     nomorResi: searchParams.get('nomorResi') || '21012026-001',
@@ -36,7 +37,7 @@ function StrukContent() {
           marginBottom: '32px'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <img src="/logo.png" alt="Simpelab Logo" style={{ width: '40px', height: '40px' }} />
+            <Image src="/logo.webp" alt="Simpelab Logo" width={40} height={40} />
             <span style={{
               color: '#000000',
               fontSize: '24px',
