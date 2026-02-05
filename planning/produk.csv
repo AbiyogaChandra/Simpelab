@@ -1,4 +1,4 @@
-﻿tb_produk,,,,
+produk,,,,
 No,Nama Atribut,Tipe Atribut,Ukuran Atribut,Keterangan
 1,id,int,4 bytes,"PRIMARY KEY, AUTO INCREMENT"
 2,kategori,enum,"{'ASET', 'HP'}",
@@ -8,3 +8,6 @@ No,Nama Atribut,Tipe Atribut,Ukuran Atribut,Keterangan
 6,model,varchar,50,
 7,spesifikasi,varchar,100,
 8,kuantitas,small int,2 bytes,
+9,waktu_dibuat,timestamp,timestamp,
+10,waktu_diubah,timestamp,timestamp,
+11,diubah_oleh,varchar,36,FOREIGN KEY (admin)

@@ -1,0 +1,12 @@
+pengajuan,,,,
+No,Nama Atribut,Tipe Atribut,Ukuran Atribut,Keterangan
+1,id,varchar,36,PRIMARY KEY
+2,id_peminjam,varchar,36,FOREIGN KEY (peminjam)
+3,status,enum,"{'DIAJUKAN', 'DIPINJAM', 'KEMBALI', 'TERLAMBAT'}",
+4,catatan,varchar,255,
+5,tanggal_pinjam,datetime,datetime,
+6,tanggal_kembali,datetime,datetime,
+7,kode_resi,varchar,12,
+8,waktu_dibuat,timestamp,timestamp,
+9,waktu_diubah,timestamp,timestamp,
+10,diubah_oleh,varchar,36,FOREIGN KEY (admin)

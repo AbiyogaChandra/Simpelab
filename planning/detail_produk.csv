@@ -1,9 +1,12 @@
-﻿tb_detail_produk,,,,
+detail_produk,,,,
 No,Nama Atribut,Tipe Atribut,Ukuran Atribut,Keterangan
 1,id,int,4 bytes,"PRIMARY KEY, AUTO INCREMENT"
-2,id_produk,int,4 bytes,FOREIGN KEY (tb_produk)
-3,id_lokasi,int,4 bytes,FOREIGN KEY (tb_lokasi)
+2,id_produk,int,4 bytes,FOREIGN KEY (produk)
+3,id_lokasi,int,4 bytes,FOREIGN KEY (lokasi)
 4,status,enum,"{'TERSEDIA', 'DIPINJAM'}",
 5,kondisi,enum,"{'BAIK', 'RUSAK'}",
 6,kode_seri,varchar,32,BOLEH NULL
 7,kode_scan,varchar,65,BOLEH NULL
+8,waktu_dibuat,timestamp,timestamp,
+9,waktu_diubah,timestamp,timestamp,
+10,diubah_oleh,varchar,36,FOREIGN KEY (admin)

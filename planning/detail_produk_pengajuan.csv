@@ -1,0 +1,5 @@
+detail_produk_pengajuan,,,,
+No,Nama Atribut,Tipe Atribut,Ukuran Atribut,Keterangan
+1,id,varchar,36,PRIMARY KEY
+2,id_detail_pengajuan,varchar,36,FOREIGN KEY (detail_pengajuan)
+3,id_detail_produk,int,4 bytes,FOREIGN KEY (detail_produk)

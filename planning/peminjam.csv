@@ -1,6 +1,6 @@
-﻿tb_peminjam,,,,
+peminjam,,,,
 No,Nama Atribut,Tipe Atribut,Ukuran Atribut,Keterangan
-1,id,uuid,36,"PRIMARY KEY, RANDOM UUID"
+1,id,varchar,36,PRIMARY KEY
 2,kategori,enum,"{'GURU', 'SISWA'}",
 3,nama,varchar,100,
 4,nomor_induk,varchar,23,

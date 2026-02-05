@@ -1,0 +1,8 @@
+session,,,,
+No,Nama Atribut,Tipe Atribut,Ukuran Atribut,Keterangan
+1,id,varchar,36,PRIMARY KEY
+2,id_admin,varchar,36,FOREIGN KEY (admin)
+3,token,varchar,255,
+4,created_at,timestamp,timestamp,
+5,last_accessed_at,timestamp,timestamp,
+6,expires_at,timestamp,timestamp,

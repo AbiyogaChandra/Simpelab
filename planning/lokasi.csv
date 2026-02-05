@@ -1,5 +1,8 @@
-﻿tb_lokasi,,,,
+lokasi,,,,
 No,Nama Atribut,Tipe Atribut,Ukuran Atribut,Keterangan
 1,id,int,4 bytes,"PRIMARY KEY, AUTO INCREMENT"
 2,nama_ruang,varchar,30,
 3,keterangan,varchar,50,
+4,waktu_dibuat,timestamp,timestamp,
+5,waktu_diubah,timestamp,timestamp,
+6,diubah_oleh,varchar,36,FOREIGN KEY (admin)
