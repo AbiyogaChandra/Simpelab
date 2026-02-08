@@ -43,82 +43,72 @@ enum KondisiDetailProduk {
 
 model Admin {
   id       String @id @default(uuid())
-  username String @unique @map("username") // VARCHAR 32
-  password String @map("password") // VARCHAR 255
+  username String @unique // VARCHAR 32
+  password String // VARCHAR 255
 
-  sesi                 Sesi[]
+  session              Session[]
   aktivitas            Aktivitas[]
   produk_diubah        Produk[]       @relation("ProdukDiubahOleh")
   lokasi_diubah        Lokasi[]       @relation("LokasiDiubahOleh")
   pengajuan_diubah     Pengajuan[]    @relation("PengajuanDiubahOleh")
   detail_produk_diubah DetailProduk[] @relation("DetailProdukDiubahOleh")
-
-  @@map("tb_admin")
 }
 
-model Sesi {
-  id                   String   @id @default(uuid())
-  id_admin             String
-  token                String   @map("token") // VARCHAR 255
-  waktu_pembuatan      DateTime @default(now()) @map("waktu_pembuatan")
-  waktu_akses_terakhir DateTime @updatedAt @map("waktu_akses_terakhir")
-  waktu_kadaluarsa     DateTime @map("waktu_kadaluarsa")
+model Session {
+  id               String   @id @default(uuid())
+  id_admin         String
+  token            String // VARCHAR 255
+  created_at       DateTime @default(now())
+  last_accessed_at DateTime @updatedAt
+  expires_at       DateTime
 
   admin Admin @relation(fields: [id_admin], references: [id])
-
-  @@map("tb_sesi")
 }
 
 model Peminjam {
   id          String           @id @default(uuid())
   kategori    KategoriPeminjam
-  nama        String           @map("nama") // VARCHAR 100
-  nomor_induk String           @unique @map("nomor_induk") // VARCHAR 23
-  kelas       String?          @map("kelas") // VARCHAR 12, BOLEH NULL
+  nama        String // VARCHAR 100
+  nomor_induk String           @unique // VARCHAR 23
+  kelas       String? // VARCHAR 12, BOLEH NULL
 
   pengajuan Pengajuan[]
   aktivitas Aktivitas[]
-
-  @@map("tb_peminjam")
 }
 
 model Pengajuan {
   id              String          @id @default(uuid())
   status          StatusPengajuan
   id_peminjam     String
-  catatan         String          @map("catatan") // VARCHAR 255
-  tanggal_pinjam  DateTime        @default(now()) @map("tanggal_pinjam")
-  tanggal_kembali DateTime?       @map("tanggal_kembali")
-  kode_resi       String          @map("kode_resi") // VARCHAR 12
-  waktu_dibuat    DateTime        @default(now()) @map("waktu_dibuat")
-  waktu_diubah    DateTime        @updatedAt @map("waktu_diubah")
-  id_diubah_oleh  String?         @map("diubah_oleh")
+  catatan         String // VARCHAR 255
+  tanggal_pinjam  DateTime        @default(now())
+  tanggal_kembali DateTime?
+  kode_resi       String // VARCHAR 12
+  waktu_dibuat    DateTime        @default(now())
+  waktu_diubah    DateTime        @updatedAt
+  id_diubah_oleh  String?
 
   peminjam         Peminjam          @relation(fields: [id_peminjam], references: [id])
   diubah_oleh      Admin?            @relation("PengajuanDiubahOleh", fields: [id_diubah_oleh], references: [id])
   detail_pengajuan DetailPengajuan[]
-
-  @@map("tb_pengajuan")
 }
 
 model Produk {
   id             Int            @id @default(autoincrement())
   kategori       KategoriProduk
-  nama           String         @map("nama") // VARCHAR 50
-  kode           String         @map("kode") // VARCHAR 32
-  merk           String         @map("merk") // VARCHAR 50
-  model          String         @map("model") // VARCHAR 50
-  spesifikasi    String         @map("spesifikasi") // VARCHAR 100
-  kuantitas      Int            @default(0) @map("kuantitas") // SMALL INT
-  waktu_dibuat   DateTime       @default(now()) @map("waktu_dibuat")
-  waktu_diubah   DateTime       @updatedAt @map("waktu_diubah")
-  id_diubah_oleh String?        @map("diubah_oleh")
+  nama           String // VARCHAR 50
+  kode           String // VARCHAR 32
+  merk           String // VARCHAR 50
+  model          String // VARCHAR 50
+  spesifikasi    String // VARCHAR 100
+  kuantitas      Int            @default(0) // SMALL INT
+  waktu_dibuat   DateTime       @default(now())
+  waktu_diubah   DateTime       @updatedAt
+  id_diubah_oleh String?
 
   diubah_oleh      Admin?            @relation("ProdukDiubahOleh", fields: [id_diubah_oleh], references: [id])
   detail_produk    DetailProduk[]
   detail_pengajuan DetailPengajuan[]
-
-  @@map("tb_produk")
 }
 
 model DetailProduk {
@@ -127,45 +117,39 @@ model DetailProduk {
   id_lokasi      Int
   status         StatusDetailProduk
   kondisi        KondisiDetailProduk
-  kode_seri      String?             @map("kode_seri")
-  kode_scan      String?             @map("kode_scan")
-  waktu_dibuat   DateTime            @default(now()) @map("waktu_dibuat")
-  waktu_diubah   DateTime            @updatedAt @map("waktu_diubah")
-  id_diubah_oleh String?             @map("diubah_oleh")
+  kode_seri      String?
+  kode_scan      String?
+  waktu_dibuat   DateTime            @default(now())
+  waktu_diubah   DateTime            @updatedAt
+  id_diubah_oleh String?
 
   produk                  Produk                  @relation(fields: [id_produk], references: [id])
   lokasi                  Lokasi                  @relation(fields: [id_lokasi], references: [id])
   diubah_oleh             Admin?                  @relation("DetailProdukDiubahOleh", fields: [id_diubah_oleh], references: [id])
   detail_produk_pengajuan DetailProdukPengajuan[]
-
-  @@map("tb_detail_produk")
 }
 
 model Lokasi {
   id             Int      @id @default(autoincrement())
-  nama_ruang     String   @map("nama_ruang") // VARCHAR 30
-  keterangan     String   @map("keterangan") // VARCHAR 50
-  waktu_dibuat   DateTime @default(now()) @map("waktu_dibuat")
-  waktu_diubah   DateTime @updatedAt @map("waktu_diubah")
-  id_diubah_oleh String?  @map("diubah_oleh")
+  nama_ruang     String // VARCHAR 30
+  keterangan     String // VARCHAR 50
+  waktu_dibuat   DateTime @default(now())
+  waktu_diubah   DateTime @updatedAt
+  id_diubah_oleh String?
 
   diubah_oleh   Admin?         @relation("LokasiDiubahOleh", fields: [id_diubah_oleh], references: [id])
   detail_produk DetailProduk[]
-
-  @@map("tb_lokasi")
 }
 
 model DetailPengajuan {
   id           String @id @default(uuid())
   id_pengajuan String
   id_produk    Int
-  kuantitas    Int    @map("kuantitas") // SMALL INT
+  kuantitas    Int // SMALL INT
 
   pengajuan               Pengajuan               @relation(fields: [id_pengajuan], references: [id])
   produk                  Produk                  @relation(fields: [id_produk], references: [id])
   detail_produk_pengajuan DetailProdukPengajuan[]
-
-  @@map("tb_detail_pengajuan")
 }
 
 model DetailProdukPengajuan {
@@ -175,20 +159,16 @@ model DetailProdukPengajuan {
 
   detail_pengajuan DetailPengajuan @relation(fields: [id_detail_pengajuan], references: [id])
   detail_produk    DetailProduk    @relation(fields: [id_detail_produk], references: [id])
-
-  @@map("tb_detail_produk_pengajuan")
 }
 
 model Aktivitas {
   id          String   @id @default(uuid())
-  waktu       DateTime @map("waktu")
-  kategori    String   @map("kategori")
-  keterangan  String   @map("keterangan")
+  waktu       DateTime
+  kategori    String
+  keterangan  String
   id_admin    String?
   id_peminjam String?
 
   admin    Admin?    @relation(fields: [id_admin], references: [id])
   peminjam Peminjam? @relation(fields: [id_peminjam], references: [id])
-
-  @@map("tb_aktivitas")
 }
