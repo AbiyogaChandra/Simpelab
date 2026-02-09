@@ -35,7 +35,7 @@ export default function BorrowingForm() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProducts, setSelectedProducts] = useState<SelectedProduct[]>([]);
-  
+
   // Data State
   const [products, setProducts] = useState<Product[]>([]);
   const [peminjamList, setPeminjamList] = useState<Peminjam[]>([]);
@@ -48,48 +48,49 @@ export default function BorrowingForm() {
       const res = await fetch('/api/produk');
       if (res.ok) {
         const data = await res.json();
-        
+
         // Group products by name
         const groupedMap = new Map<string, Product>();
-        
+
         data.forEach((p: any) => {
-            const existing = groupedMap.get(p.nama);
-            const stock = p.stok ?? p.kuantitas;
-            
-            if (existing) {
-                // Accumulate stock
-                existing.stok += stock;
-            } else {
-                groupedMap.set(p.nama, {
-                    id: p.id, // Use the first ID encountered for this name
-                    nama: p.nama,
-                    stok: stock
-                });
-            }
+          const existing = groupedMap.get(p.nama);
+          const stock = p.stok ?? p.kuantitas;
+
+          if (existing) {
+            // Accumulate stock
+            existing.stok += stock;
+          } else {
+            groupedMap.set(p.nama, {
+              id: p.id, // Use the first ID encountered for this name
+              nama: p.nama,
+              stok: stock
+            });
+          }
         });
-        
-        setProducts(Array.from(groupedMap.values()));
+
+        const availableProducts = Array.from(groupedMap.values()).filter(p => p.stok > 0);
+        setProducts(availableProducts);
       }
     } catch (error) {
-       console.error("Failed to fetch products", error);
+      console.error("Failed to fetch products", error);
     }
   };
 
   // Fetch Peminjam
   const fetchPeminjam = async (query: string, kategori: string) => {
-      if (!query) {
-          setPeminjamList([]);
-          return;
+    if (!query) {
+      setPeminjamList([]);
+      return;
+    }
+    try {
+      const res = await fetch(`/api/peminjam?query=${query}&kategori=${kategori}`);
+      if (res.ok) {
+        const data = await res.json();
+        setPeminjamList(data);
       }
-      try {
-          const res = await fetch(`/api/peminjam?query=${query}&kategori=${kategori}`);
-          if (res.ok) {
-              const data = await res.json();
-              setPeminjamList(data);
-          }
-      } catch (error) {
-          console.error("Failed to fetch peminjam", error);
-      }
+    } catch (error) {
+      console.error("Failed to fetch peminjam", error);
+    }
   };
 
   // Filter produk berdasarkan search query
@@ -102,14 +103,14 @@ export default function BorrowingForm() {
       setSelectedProducts([...selectedProducts, { ...product, quantity: 1 }]);
     }
   };
-  
+
   const handleRemoveProduct = (productId: number) => {
     setSelectedProducts(selectedProducts.filter(p => p.id !== productId));
   };
 
   const handleQuantityChange = (productId: number, newQuantity: number) => {
     if (newQuantity < 1) return;
-    setSelectedProducts(selectedProducts.map(p => 
+    setSelectedProducts(selectedProducts.map(p =>
       p.id === productId ? { ...p, quantity: newQuantity } : p
     ));
   };
@@ -127,7 +128,7 @@ export default function BorrowingForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validasi form
     if (!formData.kategori || !selectedPeminjam || selectedProducts.length === 0) {
       alert('Mohon lengkapi identitas valid dan pilih minimal satu barang');
@@ -135,54 +136,54 @@ export default function BorrowingForm() {
     }
 
     try {
-        const payload = {
-            id_peminjam: selectedPeminjam.id,
-            items: selectedProducts.map(p => ({
-                id_produk: p.id,
-                kuantitas: p.quantity
-            })),
-            catatan: formData.catatanBarang || 'Peminjaman Lab', // Use clarification as reason
-            tanggal_pinjam: new Date(formData.tanggalPinjam).toISOString(),
-            tanggal_kembali: formData.tanggalKembali ? new Date(formData.tanggalKembali).toISOString() : '',
-        };
-        
-        const res = await fetch('/api/pengajuan', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
+      const payload = {
+        id_peminjam: selectedPeminjam.id,
+        items: selectedProducts.map(p => ({
+          id_produk: p.id,
+          kuantitas: p.quantity
+        })),
+        catatan: formData.catatanBarang || 'Peminjaman Lab', // Use clarification as reason
+        tanggal_pinjam: new Date(formData.tanggalPinjam).toISOString(),
+        tanggal_kembali: formData.tanggalKembali ? new Date(formData.tanggalKembali).toISOString() : '',
+      };
 
-        if (!res.ok) {
-            const err = await res.json();
-            throw new Error(err.error || 'Failed to submit');
-        }
+      const res = await fetch('/api/pengajuan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
 
-        const data = await res.json();
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to submit');
+      }
 
-        // Format dates for receipt query params (display format)
-        const tanggalPinjamFormatted = moment(formData.tanggalPinjam).format('DD MMMM YYYY');
-        const tanggalKembaliFormatted = formData.tanggalKembali 
-            ? moment(formData.tanggalKembali).format('DD MMMM YYYY') 
-            : '-';
-        
-        const kategoriFormatted = formData.kategori === 'guru' ? 'Guru' : 'Siswa';
-        
-        const barangFormatted = selectedProducts.map(p => `${p.quantity} ${p.nama}`).join(', ');
+      const data = await res.json();
 
-        const params = new URLSearchParams({
-            nomorResi: data.kode_resi || 'PENDING',
-            kategori: kategoriFormatted,
-            identitas: `${selectedPeminjam.nama} - ${selectedPeminjam.nomor_induk}`,
-            barang: barangFormatted,
-            catatanBarang: formData.catatanBarang || '-',
-            tanggalPinjam: tanggalPinjamFormatted,
-            tanggalKembali: tanggalKembaliFormatted,
-        });
+      // Format dates for receipt query params (display format)
+      const tanggalPinjamFormatted = moment(formData.tanggalPinjam).format('DD MMMM YYYY');
+      const tanggalKembaliFormatted = formData.tanggalKembali
+        ? moment(formData.tanggalKembali).format('DD MMMM YYYY')
+        : '-';
 
-        router.push(`/struk?${params.toString()}`);
+      const kategoriFormatted = formData.kategori === 'guru' ? 'Guru' : 'Siswa';
+
+      const barangFormatted = selectedProducts.map(p => `${p.quantity} ${p.nama}`).join(', ');
+
+      const params = new URLSearchParams({
+        nomorResi: data.kode_resi || 'PENDING',
+        kategori: kategoriFormatted,
+        identitas: `${selectedPeminjam.nama} - ${selectedPeminjam.nomor_induk}`,
+        barang: barangFormatted,
+        catatanBarang: formData.catatanBarang || '-',
+        tanggalPinjam: tanggalPinjamFormatted,
+        tanggalKembali: tanggalKembaliFormatted,
+      });
+
+      router.push(`/struk?${params.toString()}`);
 
     } catch (error: any) {
-        alert(error.message);
+      alert(error.message);
     }
   };
 
@@ -191,29 +192,29 @@ export default function BorrowingForm() {
     const { name, value } = target;
 
     if (name === 'tanggalPinjam') {
-        setFormData(prev => ({
-            ...prev,
-            tanggalPinjam: value,
-            tanggalKembali: value // Auto-sync tanggal kembali
-        }));
+      setFormData(prev => ({
+        ...prev,
+        tanggalPinjam: value,
+        tanggalKembali: value // Auto-sync tanggal kembali
+      }));
     } else {
-        setFormData(prev => ({
-            ...prev,
-            [name]: value,
-        }));
+      setFormData(prev => ({
+        ...prev,
+        [name]: value,
+      }));
     }
 
     if (name === 'identitas') {
-        fetchPeminjam(value, formData.kategori);
-        setShowPeminjamDropdown(true);
-        setSelectedPeminjam(null); // Reset selection on typing
+      fetchPeminjam(value, formData.kategori);
+      setShowPeminjamDropdown(true);
+      setSelectedPeminjam(null); // Reset selection on typing
     }
   };
 
   const handlePeminjamSelect = (peminjam: Peminjam) => {
-      setFormData({ ...formData, identitas: peminjam.nama });
-      setSelectedPeminjam(peminjam);
-      setShowPeminjamDropdown(false);
+    setFormData({ ...formData, identitas: peminjam.nama });
+    setSelectedPeminjam(peminjam);
+    setShowPeminjamDropdown(false);
   };
 
   return (
@@ -228,11 +229,11 @@ export default function BorrowingForm() {
         overflow: 'hidden'
       }}>
         {/* Illustration Image - Full Background */}
-        <Image 
+        <Image
           src="/illustration.webp"
           alt="Lab Illustration"
           fill
-          style={{ 
+          style={{
             position: 'absolute',
             top: 0,
             left: 0,
@@ -253,18 +254,18 @@ export default function BorrowingForm() {
         }}>
           {/* Logo */}
           <div style={{ marginBottom: '40px' }}>
-            <div style={{ 
-              display: 'inline-flex', 
-              alignItems: 'center', 
+            <div style={{
+              display: 'inline-flex',
+              alignItems: 'center',
               gap: '6px',
               background: '#FFFFFF',
               borderRadius: '24px',
               padding: '4px 8px'
             }}>
               <Image src="/logo.webp" alt="Simpelab Logo" width={56} height={56} />
-              <span style={{ 
-                color: '#2F516A', 
-                fontSize: '26px', 
+              <span style={{
+                color: '#2F516A',
+                fontSize: '26px',
                 fontWeight: 700,
                 fontFamily: 'Outfit, sans-serif'
               }}>
@@ -335,8 +336,8 @@ export default function BorrowingForm() {
         </div>
 
         {/* Form */}
-        <form 
-          onSubmit={handleSubmit} 
+        <form
+          onSubmit={handleSubmit}
           style={{
             width: '100%',
             display: 'flex',
@@ -392,22 +393,22 @@ export default function BorrowingForm() {
               <label className="block mb-2.5" style={{ color: '#333333', fontSize: '14px', fontWeight: 600, marginBottom: '12px', display: 'block' }}>
                 Identitas
               </label>
-                <div className="relative">
+              <div className="relative">
                 <input
                   type="text"
                   name="identitas"
                   value={formData.identitas}
                   onChange={handleChange}
                   onFocus={() => {
-                     if (formData.identitas) fetchPeminjam(formData.identitas, formData.kategori);
-                     setShowPeminjamDropdown(true);
+                    if (formData.identitas) fetchPeminjam(formData.identitas, formData.kategori);
+                    setShowPeminjamDropdown(true);
                   }}
                   onBlur={() => setTimeout(() => setShowPeminjamDropdown(false), 200)} // Delay to allow click
                   placeholder="Ketik identitas anda"
                   className="w-full px-4 py-3 border rounded-lg focus:outline-none"
-                  style={{ 
-                    fontSize: '14px', 
-                    color: formData.identitas ? '#000000' : '#AAAAAA', 
+                  style={{
+                    fontSize: '14px',
+                    color: formData.identitas ? '#000000' : '#AAAAAA',
                     height: '48px',
                     paddingLeft: '40px',
                     borderColor: '#E0E0E0',
@@ -418,46 +419,46 @@ export default function BorrowingForm() {
                 />
                 <div className="absolute left-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
                   <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M8 8C9.65685 8 11 6.65685 11 5C11 3.34315 9.65685 2 8 2C6.34315 2 5 3.34315 5 5C5 6.65685 6.34315 8 8 8Z" stroke="#666666" strokeWidth="1.5"/>
-                    <path d="M2 14C2 11.7909 4.68629 10 8 10C11.3137 10 14 11.7909 14 14" stroke="#666666" strokeWidth="1.5" strokeLinecap="round"/>
+                    <path d="M8 8C9.65685 8 11 6.65685 11 5C11 3.34315 9.65685 2 8 2C6.34315 2 5 3.34315 5 5C5 6.65685 6.34315 8 8 8Z" stroke="#666666" strokeWidth="1.5" />
+                    <path d="M2 14C2 11.7909 4.68629 10 8 10C11.3137 10 14 11.7909 14 14" stroke="#666666" strokeWidth="1.5" strokeLinecap="round" />
                   </svg>
                 </div>
-                
+
                 {/* Dropdown */}
                 {showPeminjamDropdown && peminjamList.length > 0 && (
-                    <div style={{
-                        position: 'absolute',
-                        top: '100%',
-                        left: 0,
-                        right: 0,
-                        backgroundColor: '#FFFFFF',
-                        border: '1px solid #E0E0E0',
-                        borderRadius: '8px',
-                        marginTop: '4px',
-                        maxHeight: '200px',
-                        overflowY: 'auto',
-                        zIndex: 10,
-                        boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-                    }}>
-                        {peminjamList.map((p) => (
-                            <div
-                                key={p.id}
-                                onClick={() => handlePeminjamSelect(p)}
-                                style={{
-                                    padding: '10px 16px',
-                                    fontSize: '14px',
-                                    color: '#333333',
-                                    cursor: 'pointer',
-                                    borderBottom: '1px solid #F5F5F5'
-                                }}
-                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F9FAFB'}
-                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#FFFFFF'}
-                            >
-                                <div style={{ fontWeight: 500 }}>{p.nama}</div>
-                                <div style={{ fontSize: '12px', color: '#666666' }}>{p.nomor_induk}</div>
-                            </div>
-                        ))}
-                    </div>
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    backgroundColor: '#FFFFFF',
+                    border: '1px solid #E0E0E0',
+                    borderRadius: '8px',
+                    marginTop: '4px',
+                    maxHeight: '200px',
+                    overflowY: 'auto',
+                    zIndex: 10,
+                    boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                  }}>
+                    {peminjamList.map((p) => (
+                      <div
+                        key={p.id}
+                        onClick={() => handlePeminjamSelect(p)}
+                        style={{
+                          padding: '10px 16px',
+                          fontSize: '14px',
+                          color: '#333333',
+                          cursor: 'pointer',
+                          borderBottom: '1px solid #F5F5F5'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F9FAFB'}
+                        onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#FFFFFF'}
+                      >
+                        <div style={{ fontWeight: 500 }}>{p.nama}</div>
+                        <div style={{ fontSize: '12px', color: '#666666' }}>{p.nomor_induk}</div>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
             </div>
@@ -470,68 +471,68 @@ export default function BorrowingForm() {
             </label>
             {/* Selected Products List */}
             {selectedProducts.length > 0 && (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '16px' }}>
-                    {selectedProducts.map((product, index) => (
-                         <div key={product.id} style={{
-                             background: '#FFFFFF',
-                             border: '1px solid #E0E0E0',
-                             borderRadius: '12px',
-                             padding: '16px',
-                         }}>
-                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                                 <span style={{ fontSize: '14px', fontWeight: 600, color: '#333333' }}>
-                                     #{String(index + 1).padStart(2, '0')}
-                                 </span>
-                                 <button
-                                     type="button"
-                                     onClick={() => handleRemoveProduct(product.id)}
-                                     style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}
-                                 >
-                                     <svg width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                         <path d="M2 4h12M5 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1m2 0v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4h10zM6 7v4M10 7v4" stroke="#DC2626" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                     </svg>
-                                 </button>
-                             </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '16px' }}>
+                {selectedProducts.map((product, index) => (
+                  <div key={product.id} style={{
+                    background: '#FFFFFF',
+                    border: '1px solid #E0E0E0',
+                    borderRadius: '12px',
+                    padding: '16px',
+                  }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                      <span style={{ fontSize: '14px', fontWeight: 600, color: '#333333' }}>
+                        #{String(index + 1).padStart(2, '0')}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveProduct(product.id)}
+                        style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}
+                      >
+                        <svg width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M2 4h12M5 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1m2 0v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4h10zM6 7v4M10 7v4" stroke="#DC2626" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </button>
+                    </div>
 
-                             <div style={{ marginBottom: '12px' }}>
-                                 <label style={{ display: 'block', fontSize: '12px', color: '#999999', marginBottom: '6px' }}>
-                                     Nama Produk
-                                 </label>
-                                 <div style={{
-                                     background: '#F5F5F5',
-                                     borderRadius: '8px',
-                                     padding: '10px 12px',
-                                     fontSize: '14px',
-                                     color: '#333333',
-                                     border: '1px solid #EEEEEE'
-                                 }}>
-                                     {product.nama}
-                                 </div>
-                             </div>
+                    <div style={{ marginBottom: '12px' }}>
+                      <label style={{ display: 'block', fontSize: '12px', color: '#999999', marginBottom: '6px' }}>
+                        Nama Produk
+                      </label>
+                      <div style={{
+                        background: '#F5F5F5',
+                        borderRadius: '8px',
+                        padding: '10px 12px',
+                        fontSize: '14px',
+                        color: '#333333',
+                        border: '1px solid #EEEEEE'
+                      }}>
+                        {product.nama}
+                      </div>
+                    </div>
 
-                             <div>
-                                 <label style={{ display: 'block', fontSize: '12px', color: '#999999', marginBottom: '6px' }}>
-                                     Kuantitas
-                                 </label>
-                                 <input
-                                     type="number"
-                                     min="1"
-                                     value={product.quantity}
-                                     onChange={(e) => handleQuantityChange(product.id, parseInt(e.target.value) || 1)}
-                                     style={{
-                                         width: '100%',
-                                         borderRadius: '8px',
-                                         padding: '10px 12px',
-                                         fontSize: '14px',
-                                         color: '#333333',
-                                         border: '1px solid #E0E0E0',
-                                         outline: 'none'
-                                     }}
-                                 />
-                             </div>
-                         </div>
-                    ))}
-                </div>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '12px', color: '#999999', marginBottom: '6px' }}>
+                        Kuantitas
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={product.quantity}
+                        onChange={(e) => handleQuantityChange(product.id, parseInt(e.target.value) || 1)}
+                        style={{
+                          width: '100%',
+                          borderRadius: '8px',
+                          padding: '10px 12px',
+                          fontSize: '14px',
+                          color: '#333333',
+                          border: '1px solid #E0E0E0',
+                          outline: 'none'
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
             )}
 
             <button
@@ -552,7 +553,7 @@ export default function BorrowingForm() {
                 gap: '8px',
                 transition: 'all 0.2s',
                 border: 'none',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.05)' 
+                boxShadow: '0 1px 3px rgba(0,0,0,0.05)'
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.backgroundColor = '#F8FAFC';
@@ -562,7 +563,7 @@ export default function BorrowingForm() {
               }}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M12 5V19M5 12H19" stroke="#2F516A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M12 5V19M5 12H19" stroke="#2F516A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
               <span>Tambahkan Barang</span>
             </button>
@@ -579,9 +580,9 @@ export default function BorrowingForm() {
               onChange={handleChange}
               placeholder="Ketik catatan barang disini..."
               className="w-full px-4 py-3 border rounded-lg focus:outline-none resize-none"
-              style={{ 
-                fontSize: '14px', 
-                color: formData.catatanBarang ? '#000000' : '#AAAAAA', 
+              style={{
+                fontSize: '14px',
+                color: formData.catatanBarang ? '#000000' : '#AAAAAA',
                 minHeight: '100px',
                 fontFamily: 'inherit',
                 borderColor: '#E0E0E0',
@@ -605,9 +606,9 @@ export default function BorrowingForm() {
                   value={formData.tanggalPinjam}
                   onChange={handleChange}
                   className="w-full px-4 py-3 border rounded-lg focus:outline-none"
-                  style={{ 
-                    fontSize: '14px', 
-                    color: formData.tanggalPinjam ? '#000000' : '#AAAAAA', 
+                  style={{
+                    fontSize: '14px',
+                    color: formData.tanggalPinjam ? '#000000' : '#AAAAAA',
                     height: '48px',
                     borderColor: '#E0E0E0',
                     borderRadius: '8px',
@@ -630,9 +631,9 @@ export default function BorrowingForm() {
                   onChange={handleChange}
                   min={formData.tanggalPinjam} // Prevent dates before pinjam
                   className="w-full px-4 py-3 border rounded-lg focus:outline-none"
-                  style={{ 
-                    fontSize: '14px', 
-                    color: formData.tanggalKembali ? '#000000' : '#AAAAAA', 
+                  style={{
+                    fontSize: '14px',
+                    color: formData.tanggalKembali ? '#000000' : '#AAAAAA',
                     height: '48px',
                     borderColor: '#E0E0E0',
                     borderRadius: '8px',
@@ -717,8 +718,8 @@ export default function BorrowingForm() {
                 pointerEvents: 'none',
               }}>
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M7.33333 12.6667C10.2789 12.6667 12.6667 10.2789 12.6667 7.33333C12.6667 4.38781 10.2789 2 7.33333 2C4.38781 2 2 4.38781 2 7.33333C2 10.2789 4.38781 12.6667 7.33333 12.6667Z" stroke="#666666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M14 14L11.1 11.1" stroke="#666666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M7.33333 12.6667C10.2789 12.6667 12.6667 10.2789 12.6667 7.33333C12.6667 4.38781 10.2789 2 7.33333 2C4.38781 2 2 4.38781 2 7.33333C2 10.2789 4.38781 12.6667 7.33333 12.6667Z" stroke="#666666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M14 14L11.1 11.1" stroke="#666666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </div>
             </div>
@@ -728,41 +729,41 @@ export default function BorrowingForm() {
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ background: '#E3F2FD' }}>
-                    <th style={{ 
-                      padding: '12px', 
-                      textAlign: 'left', 
-                      fontSize: '14px', 
-                      fontWeight: 600, 
+                    <th style={{
+                      padding: '12px',
+                      textAlign: 'left',
+                      fontSize: '14px',
+                      fontWeight: 600,
                       color: '#000000',
                       fontFamily: 'Outfit, sans-serif'
                     }}>
                       No
                     </th>
-                    <th style={{ 
-                      padding: '12px', 
-                      textAlign: 'left', 
-                      fontSize: '14px', 
-                      fontWeight: 600, 
+                    <th style={{
+                      padding: '12px',
+                      textAlign: 'left',
+                      fontSize: '14px',
+                      fontWeight: 600,
                       color: '#000000',
                       fontFamily: 'Outfit, sans-serif'
                     }}>
                       Nama Produk
                     </th>
-                    <th style={{ 
-                      padding: '12px', 
-                      textAlign: 'left', 
-                      fontSize: '14px', 
-                      fontWeight: 600, 
+                    <th style={{
+                      padding: '12px',
+                      textAlign: 'left',
+                      fontSize: '14px',
+                      fontWeight: 600,
                       color: '#000000',
                       fontFamily: 'Outfit, sans-serif'
                     }}>
                       Stok
                     </th>
-                    <th style={{ 
-                      padding: '12px', 
-                      textAlign: 'left', 
-                      fontSize: '14px', 
-                      fontWeight: 600, 
+                    <th style={{
+                      padding: '12px',
+                      textAlign: 'left',
+                      fontSize: '14px',
+                      fontWeight: 600,
                       color: '#000000',
                       fontFamily: 'Outfit, sans-serif'
                     }}>
@@ -773,17 +774,17 @@ export default function BorrowingForm() {
                 <tbody>
                   {filteredProducts.map((product, index) => (
                     <tr key={product.id} style={{ borderBottom: '1px solid #E0E0E0' }}>
-                      <td style={{ 
-                        padding: '12px', 
-                        fontSize: '14px', 
+                      <td style={{
+                        padding: '12px',
+                        fontSize: '14px',
                         color: '#000000',
                         fontFamily: 'Outfit, sans-serif'
                       }}>
                         {index + 1}
                       </td>
-                      <td style={{ 
-                        padding: '12px', 
-                        fontSize: '16px', 
+                      <td style={{
+                        padding: '12px',
+                        fontSize: '16px',
                         color: '#2F516A',
                         fontWeight: 400,
                         lineHeight: '100%',
@@ -791,9 +792,9 @@ export default function BorrowingForm() {
                       }}>
                         {product.nama}
                       </td>
-                      <td style={{ 
-                        padding: '12px', 
-                        fontSize: '14px', 
+                      <td style={{
+                        padding: '12px',
+                        fontSize: '14px',
                         color: '#000000',
                         fontFamily: 'Outfit, sans-serif'
                       }}>
