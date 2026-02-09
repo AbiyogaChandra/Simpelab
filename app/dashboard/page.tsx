@@ -45,10 +45,13 @@ export default function DashboardPage() {
 
         // Fetch Activities (Aktivitas)
         const actRes = await fetch('/api/aktivitas');
-        const activities = await actRes.json();
+        const activitiesData = await actRes.json();
+
+        // Handle both array (legacy) and object with data property (new)
+        const activitiesList = Array.isArray(activitiesData) ? activitiesData : (activitiesData.data || []);
 
         // Limit to 3 recent activities
-        setRecentActivities(activities.slice(0, 3));
+        setRecentActivities(activitiesList.slice(0, 3));
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       } finally {
