@@ -59,6 +59,34 @@ export default function DashboardPage() {
     fetchData();
   }, []);
 
+  const getTagColor = (tag: string) => {
+    switch (tag) {
+      case 'Buat':
+      case 'Tambah': // Backward compatibility
+        return { bg: '#D1FAE5', text: '#065F46' }; // Green
+      case 'Ubah':
+      case 'Edit': // Backward compatibility
+        return { bg: '#DBEAFE', text: '#1E40AF' }; // Blue
+      case 'Hapus':
+        return { bg: '#FEE2E2', text: '#991B1B' }; // Red
+      case 'Disetujui':
+      case 'Pengembalian':
+        return { bg: '#D1FAE5', text: '#065F46' }; // Green
+
+      case 'Produk':
+      case 'Detail Produk':
+      case 'Barang': // Backward compatibility
+        return { bg: '#FCE7F3', text: '#9F1239' }; // Pink
+      case 'Peminjaman':
+        return { bg: '#E0E7FF', text: '#3730A3' }; // Indigo
+      case 'Lokasi':
+        return { bg: '#FEF3C7', text: '#92400E' }; // Amber
+
+      default:
+        return { bg: '#F5F5F5', text: '#333333' };
+    }
+  };
+
   if (loading) {
     return (
       <div style={{ display: 'flex', minHeight: '100vh', background: '#F5F5F5' }}>
@@ -434,24 +462,28 @@ export default function DashboardPage() {
                   }}>
                     {/* Tags */}
                     <div style={{ display: 'flex', gap: '8px', marginBottom: '8px', flexWrap: 'wrap' }}>
-                      {activity.tags && activity.tags.map((tag: string, idx: number) => (
-                        <span key={idx} style={{
-                          fontSize: '12px',
-                          padding: '4px 8px',
-                          borderRadius: '4px',
-                          background: '#F3F4F6',
-                          color: '#374151'
-                        }}>
-                          {tag}
-                        </span>
-                      ))}
+                      {activity.tags && activity.tags.map((tag: string, idx: number) => {
+                        const colors = getTagColor(tag);
+                        return (
+                          <span key={idx} style={{
+                            fontSize: '12px',
+                            padding: '4px 8px',
+                            borderRadius: '4px',
+                            background: colors.bg,
+                            color: colors.text,
+                            fontWeight: 500
+                          }}>
+                            {tag}
+                          </span>
+                        );
+                      })}
                     </div>
 
                     <div style={{
-                       color: '#333333',
-                       fontSize: '16px',
-                       fontWeight: 500,
-                       marginBottom: '4px'
+                      color: '#333333',
+                      fontSize: '16px',
+                      fontWeight: 500,
+                      marginBottom: '4px'
                     }}>
                       {activity.message}
                     </div>
@@ -460,7 +492,7 @@ export default function DashboardPage() {
                       fontSize: '14px',
                       fontWeight: 400
                     }}>
-                       {activity.timestamp} | oleh {activity.user}
+                      {activity.timestamp} | oleh {activity.user}
                     </div>
                   </div>
                 ))
