@@ -7,9 +7,12 @@ import Sidebar from '@/components/Sidebar';
 export default function AktivitasPage() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('');
-  const [activityLogs, setActivityLogs] = useState([]);
+  const [activityLogs, setActivityLogs] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const LIMIT = 20;
 
   const actionTags = ['Buat', 'Ubah', 'Hapus'];
   const targetTags = ['Produk', 'Detail Produk', 'Peminjaman', 'Lokasi'];
@@ -21,11 +24,20 @@ export default function AktivitasPage() {
         const query = new URLSearchParams();
         if (filter && filter !== 'Semua') query.append('tag', filter);
         if (search) query.append('search', search);
+        query.append('page', page.toString());
+        query.append('limit', LIMIT.toString());
 
         const res = await fetch(`/api/aktivitas?${query.toString()}`);
         if (res.ok) {
-          const data = await res.json();
-          setActivityLogs(data);
+          const result = await res.json();
+          // Provide backward compatibility if API returns array directly (during migration/caching)
+          if (Array.isArray(result)) {
+            setActivityLogs(result);
+            setTotalPages(1);
+          } else {
+            setActivityLogs(result.data);
+            setTotalPages(result.pagination.totalPages);
+          }
         }
       } catch (error) {
         console.error('Failed to fetch activities:', error);
@@ -39,7 +51,7 @@ export default function AktivitasPage() {
     }, 300); // Debounce search
 
     return () => clearTimeout(timeoutId);
-  }, [filter, search]);
+  }, [filter, search, page]);
 
   const getTagColor = (tag: string) => {
     switch (tag) {
@@ -330,6 +342,43 @@ export default function AktivitasPage() {
                 </p>
               </div>
             )))}
+        </div>
+
+        {/* Pagination Controls */}
+        <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'center', gap: '12px', alignItems: 'center' }}>
+          <button
+            onClick={() => setPage(p => Math.max(1, p - 1))}
+            disabled={page === 1}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '8px',
+              border: '1px solid #E0E0E0',
+              background: page === 1 ? '#F5F5F5' : '#FFFFFF',
+              color: page === 1 ? '#999999' : '#333333',
+              cursor: page === 1 ? 'not-allowed' : 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            Sebelumnya
+          </button>
+          <span style={{ fontSize: '14px', color: '#666666' }}>
+            Halaman {page} dari {totalPages}
+          </span>
+          <button
+            onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+            disabled={page === totalPages}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '8px',
+              border: '1px solid #E0E0E0',
+              background: page === totalPages ? '#F5F5F5' : '#FFFFFF',
+              color: page === totalPages ? '#999999' : '#333333',
+              cursor: page === totalPages ? 'not-allowed' : 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            Selanjutnya
+          </button>
         </div>
       </div>
     </div>
