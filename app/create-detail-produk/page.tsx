@@ -40,25 +40,25 @@ function CreateDetailProdukContent() {
         setLokasiList(lokasiData);
 
         if (isEditing) {
-            const detailRes = await fetch(`/api/detail-produk?id=${editId}`);
-            if (detailRes.ok) {
-                const detailData = await detailRes.json();
-                if (detailData.length > 0) {
-                    const item = detailData[0];
-                    setFormData({
-                        pilihProduk: item.id_produk.toString(),
-                        nomorSeri: item.kode_seri || '',
-                        tanggalMasuk: '', // Date usually managed by created_at if not explicit input
-                        letak: item.id_lokasi.toString(),
-                        kondisi: item.kondisi,
-                        kodeScan: item.kode_scan || '',
-                    });
-                    // Initialize search queries for autocomplete
-                    setSearchQuery(`${item.produk.nama} - ${item.produk.merk} - ${item.produk.model} - ${item.produk.spesifikasi} (${item.produk.kode})`);
-                    setLokasiSearchQuery(item.lokasi.keterangan);
-                    setSelectedRuang(item.lokasi.nama_ruang);
-                }
+          const detailRes = await fetch(`/api/detail-produk?id=${editId}`);
+          if (detailRes.ok) {
+            const detailData = await detailRes.json();
+            if (detailData.length > 0) {
+              const item = detailData[0];
+              setFormData({
+                pilihProduk: item.id_produk.toString(),
+                nomorSeri: item.kode_seri || '',
+                tanggalMasuk: '', // Date usually managed by created_at if not explicit input
+                letak: item.id_lokasi.toString(),
+                kondisi: item.kondisi,
+                kodeScan: item.kode_scan || '',
+              });
+              // Initialize search queries for autocomplete
+              setSearchQuery(`${item.produk.nama} - ${item.produk.merk} - ${item.produk.model} - ${item.produk.spesifikasi} (${item.produk.kode})`);
+              setLokasiSearchQuery(item.lokasi.keterangan);
+              setSelectedRuang(item.lokasi.nama_ruang);
             }
+          }
         }
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -255,9 +255,9 @@ function CreateDetailProdukContent() {
       kode_seri: isHabisPakai ? null : formData.nomorSeri,
       status: 'TERSEDIA',
       kondisi: formData.kondisi,
-      kode_scan: getQRValue(),
+      kode_scan: isHabisPakai ? null : getQRValue(),
     };
-    
+
     try {
       const url = isEditing ? `/api/detail-produk?id=${editId}` : '/api/detail-produk';
       const method = isEditing ? 'PUT' : 'POST';
@@ -276,9 +276,9 @@ function CreateDetailProdukContent() {
       }
 
       alert(`Detail produk berhasil ${isEditing ? 'diperbarui' : 'dibuat'}!`);
-      
+
       if (isEditing) {
-          router.push('/data-inventaris');
+        router.push('/data-inventaris');
       } else {
         handleReset();
       }
@@ -301,16 +301,16 @@ function CreateDetailProdukContent() {
     setLokasiSearchQuery('');
     router.push('/create-detail-produk'); // Clear ID param
   };
-  
+
   const getQRValue = () => {
-      // If editing and has kodeScan, use it.
-      if (isEditing && formData.kodeScan) return formData.kodeScan;
-      
-      // If creating or editing without kodeScan, compute it.
-      if (formData.nomorSeri && selectedProduct) {
-          return `${selectedProduct.kode}-${formData.nomorSeri}`;
-      }
-      return '';
+    // If editing and has kodeScan, use it.
+    if (isEditing && formData.kodeScan) return formData.kodeScan;
+
+    // If creating or editing without kodeScan, compute it.
+    if (formData.nomorSeri && selectedProduct) {
+      return `${selectedProduct.kode}-${formData.nomorSeri}`;
+    }
+    return '';
   };
 
   return (
@@ -394,16 +394,16 @@ function CreateDetailProdukContent() {
 
           {/* Form */}
           <form onSubmit={handleSubmit}>
-            <div style={{ 
-              display: 'grid', 
-              gridTemplateColumns: '2fr 1fr', 
-              gap: '24px', 
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '2fr 1fr',
+              gap: '24px',
               marginBottom: '24px',
-              alignItems: 'stretch' 
+              alignItems: 'stretch'
             }}>
               {/* Left Column: Inputs */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                
+
                 {/* Pilih Produk */}
                 <div>
                   <label style={{
@@ -435,7 +435,7 @@ function CreateDetailProdukContent() {
                         fontFamily: 'inherit'
                       }}
                     />
-                    
+
                     {/* Autocomplete Dropdown */}
                     {showDropdown && filteredProduk.length > 0 && (
                       <div style={{
@@ -795,34 +795,52 @@ function CreateDetailProdukContent() {
                 height: '100%',
                 minHeight: '200px'
               }}>
-                {getQRValue() ? (
+                {isHabisPakai ? (
+                  <div style={{ textAlign: 'center', color: '#666' }}>
+                    <iconify-icon icon="mdi:qrcode-off" height="48" style={{ marginBottom: '16px', color: '#999' }} />
+                    <p style={{ fontSize: '14px' }}>QR Code tidak tersedia untuk barang Habis Pakai</p>
+                  </div>
+                ) : getQRValue() ? (
                   <>
-                     <div style={{ background: 'white', padding: '16px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
-                        <QRCode
-                            value={getQRValue()}
-                            size={180}
-                            style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                            viewBox={`0 0 256 256`}
-                        />
-                     </div>
-                     <span style={{ marginTop: '16px', fontSize: '13px', color: '#666666', fontWeight: 500 }}>
-                       {getQRValue()}
-                     </span>
+                    <div style={{ background: 'white', padding: '16px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
+                      <QRCode
+                        value={getQRValue()}
+                        size={120}
+                        style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                        viewBox={`0 0 120 120`}
+                      />
+                    </div>
+                    <p style={{
+                      marginTop: '16px',
+                      color: '#333333',
+                      fontSize: '14px',
+                      fontWeight: 600,
+                      textAlign: 'center'
+                    }}>
+                      {getQRValue()}
+                    </p>
+                    <p style={{
+                      color: '#666666',
+                      fontSize: '12px',
+                      marginTop: '4px'
+                    }}>
+                      Simpan kode ini untuk ditempel pada barang
+                    </p>
                   </>
                 ) : (
                   <>
-                     <div style={{ background: 'white', padding: '14px', borderRadius: '12px', boxShadow: 'none', border: '2px dashed #e0e0e0' }}>
-                        <QRCode
-                            value="PLACEHOLDER-QR-CODE"
-                            size={180}
-                            fgColor="#e0e0e0"
-                            style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                            viewBox={`0 0 256 256`}
-                        />
-                     </div>
-                     <span style={{ marginTop: '16px', fontSize: '13px', color: '#999999', fontWeight: 500 }}>
-                       Menunggu Generasi Kode...
-                     </span>
+                    <div style={{ background: 'white', padding: '14px', borderRadius: '12px', boxShadow: 'none', border: '2px dashed #e0e0e0' }}>
+                      <QRCode
+                        value="PLACEHOLDER-QR-CODE"
+                        size={180}
+                        fgColor="#e0e0e0"
+                        style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                        viewBox={`0 0 256 256`}
+                      />
+                    </div>
+                    <span style={{ marginTop: '16px', fontSize: '13px', color: '#999999', fontWeight: 500 }}>
+                      Menunggu Generasi Kode...
+                    </span>
                   </>
                 )}
               </div>
@@ -878,9 +896,9 @@ function CreateDetailProdukContent() {
 }
 
 export default function CreateDetailProdukPage() {
-    return (
-        <Suspense fallback={<div>Loading...</div>}>
-            <CreateDetailProdukContent />
-        </Suspense>
-    );
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <CreateDetailProdukContent />
+    </Suspense>
+  );
 }

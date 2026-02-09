@@ -9,8 +9,8 @@ const detailProdukSchema = z.object({
     id_lokasi: z.coerce.number().int().positive(),
     status: z.enum(["TERSEDIA", "DIPINJAM"]),
     kondisi: z.enum(["BAIK", "RUSAK"]),
-    kode_seri: z.string().optional().or(z.literal("")),
-    kode_scan: z.string().optional().or(z.literal("")),
+    kode_seri: z.string().nullable().optional().or(z.literal("")),
+    kode_scan: z.string().nullable().optional().or(z.literal("")),
 });
 
 export async function GET(request: Request) {
@@ -18,6 +18,7 @@ export async function GET(request: Request) {
         const { searchParams } = new URL(request.url);
         const id_produkParam = searchParams.get('id_produk');
         const idParam = searchParams.get('id');
+        const statusParam = searchParams.get('status');
 
         const whereClause: any = {};
         if (id_produkParam) {
@@ -25,6 +26,9 @@ export async function GET(request: Request) {
         }
         if (idParam) {
             whereClause.id = parseInt(idParam);
+        }
+        if (statusParam) {
+            whereClause.status = statusParam;
         }
 
         const detailProduk = await prisma.detailProduk.findMany({
@@ -139,7 +143,7 @@ export async function PUT(request: Request) {
 
         const session = await getCurrentSession();
 
-         await logActivity(
+        await logActivity(
             prisma,
             "Ubah, Detail Produk",
             `Ubah Detail Produk: ${detailProduk.produk.kode} - ${kode_seri || 'N/A'}`,
@@ -168,12 +172,12 @@ export async function DELETE(request: Request) {
         // Get the item to find parent produk id
         // Include produk to get the name for logging
         const item = await prisma.detailProduk.findUnique({
-             where: { id: parseInt(id) },
-             include: { produk: true }
+            where: { id: parseInt(id) },
+            include: { produk: true }
         });
 
         if (!item) {
-             return NextResponse.json({ error: "Item not found" }, { status: 404 });
+            return NextResponse.json({ error: "Item not found" }, { status: 404 });
         }
 
         // Delete the item
