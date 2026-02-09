@@ -1,9 +1,17 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@lib/prisma";
 
-export async function GET() {
+export async function GET(request: Request) {
+    const { searchParams } = new URL(request.url);
+    const tag = searchParams.get('tag');
+
     try {
+        const whereClause = (tag && tag !== 'all')
+            ? { kategori: { contains: tag } }
+            : {};
+
         const aktivitas = await prisma.aktivitas.findMany({
+            where: whereClause,
             include: {
                 admin: {
                     select: {
