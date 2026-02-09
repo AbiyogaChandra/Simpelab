@@ -1,4 +1,5 @@
 import { prisma } from "@lib/prisma";
+import * as bcrypt from "bcrypt";
 
 async function main() {
     const peminjam = await prisma.peminjam.createMany({
@@ -64,6 +65,17 @@ async function main() {
         }],
     });
     console.log('Created Lokasi:', lokasi);
+
+    const password = await bcrypt.hash("admin", 12);
+    const admin = await prisma.admin.upsert({
+        where: { username: "admin" },
+        update: {},
+        create: {
+            username: "admin",
+            password: password,
+        },
+    });
+    console.log("Created/Updated Admin:", admin);
 }
 
 main()

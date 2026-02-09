@@ -28,7 +28,7 @@ export default function Sidebar() {
         {
             name: 'Data Inventaris',
             path: '/data-inventaris',
-            extraPaths: ['/create-produk', '/create-barang'],
+            extraPaths: ['/create-produk', '/create-detail-produk'],
             icon: (active: boolean) => (
                 <iconify-icon
                     icon="bxs:data"
@@ -96,7 +96,17 @@ export default function Sidebar() {
             {/* Footer Menu */}
             <div className="p-4 border-t border-[#E5E5E5] flex flex-col gap-1">
                 {/* Keluar */}
-                <div className="flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer">
+                <div 
+                    onClick={async () => {
+                        try {
+                            await fetch('/api/auth/logout', { method: 'POST' });
+                            window.location.href = '/login';
+                        } catch (error) {
+                            console.error('Logout failed', error);
+                        }
+                    }}
+                    className="flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer hover:bg-red-50"
+                >
                     <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <path d="M7 17H4C3.44772 17 3 16.5523 3 16V4C3 3.44772 3.44772 3 4 3H7M14 14L17 10M17 10L14 6M17 10H7" stroke="#666666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                     </svg>
