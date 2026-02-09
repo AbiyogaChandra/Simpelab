@@ -5,8 +5,14 @@ function getRandomInt(min: number, max: number) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
+
 function getRandomElement<T>(array: T[]): T {
     return array[Math.floor(Math.random() * array.length)];
+}
+
+function generateRandomSerial(length: number = 32) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    return Array.from({ length }, () => chars.charAt(Math.floor(Math.random() * chars.length))).join('');
 }
 
 async function main() {
@@ -92,7 +98,7 @@ async function main() {
         let createdCount = 0;
 
         for (let i = 0; i < count; i++) {
-            const serial = isAset ? `${prod.kode}-SN-${1000 + i}` : null;
+            const serial = isAset ? generateRandomSerial(32) : null;
             const location = getRandomElement(locations);
 
             const dp = await prisma.detailProduk.create({
