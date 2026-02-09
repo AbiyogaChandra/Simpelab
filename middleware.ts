@@ -15,7 +15,8 @@ export function middleware(request: NextRequest) {
     "/create-detail-produk",
     "/api/aktivitas",
     "/api/detail-produk",
-    "/api/lokasi"
+    "/api/lokasi",
+    "/api/peminjaman"
   ];
 
   // Specific API method protection (if needed, but for now path-based)
@@ -54,6 +55,7 @@ export const config = {
     "/login",
     "/api/aktivitas/:path*",
     "/api/detail-produk/:path*",
-    "/api/lokasi/:path*"
+    "/api/lokasi/:path*",
+    "/api/peminjaman/:path*"
   ],
 };

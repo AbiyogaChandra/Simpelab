@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Sidebar from '@/components/Sidebar';
 
@@ -58,88 +58,185 @@ function formatDate(d: string | null): string {
   return `${day}/${month}/${year}`;
 }
 
-const DUMMY_PENGAJUAN: Pengajuan[] = [
-  {
-    id: '1',
-    status: 'KEMBALI',
-    kode_resi: '21012026-001',
-    catatan: 'Type OTG, dipinjam untuk DDK',
-    tanggal_pinjam: '2026-01-21T08:00:00',
-    tanggal_kembali: '2026-01-21T16:00:00',
-    peminjam: {
-      id: 'p1',
-      nama: 'Adinda F',
-      nomor_induk: '246151837063',
-      kelas: 'XII RPL B',
-    },
-    detail_pengajuan: [
-      { id: 'dp1', kuantitas: 1, produk: { id: 1, nama: 'Flashdisk' } },
-    ],
-  },
-  {
-    id: '2',
-    status: 'DIAJUKAN',
-    kode_resi: '22012026-002',
-    catatan: 'Praktikum',
-    tanggal_pinjam: '2026-01-22T09:00:00',
-    tanggal_kembali: null,
-    peminjam: {
-      id: 'p2',
-      nama: 'Budi S',
-      nomor_induk: '246151837064',
-      kelas: 'XII RPL A',
-    },
-    detail_pengajuan: [
-      { id: 'dp2', kuantitas: 2, produk: { id: 2, nama: 'Tissue' } },
-      { id: 'dp3', kuantitas: 1, produk: { id: 1, nama: 'Flashdisk' } },
-    ],
-  },
-  {
-    id: '3',
-    status: 'DIPINJAM',
-    kode_resi: '20012026-003',
-    catatan: 'Presentasi',
-    tanggal_pinjam: '2026-01-20T10:00:00',
-    tanggal_kembali: null,
-    peminjam: {
-      id: 'p3',
-      nama: 'Citra D',
-      nomor_induk: '246151837065',
-      kelas: 'XI MM B',
-    },
-    detail_pengajuan: [
-      { id: 'dp4', kuantitas: 1, produk: { id: 3, nama: 'HDMI' } },
-    ],
-  },
-  {
-    id: '4',
-    status: 'TERLAMBAT',
-    kode_resi: '15012026-004',
-    catatan: '-',
-    tanggal_pinjam: '2026-01-15T08:00:00',
-    tanggal_kembali: null,
-    peminjam: {
-      id: 'p4',
-      nama: 'Dewi L',
-      nomor_induk: '246151837066',
-      kelas: 'XII TKJ A',
-    },
-    detail_pengajuan: [
-      { id: 'dp5', kuantitas: 1, produk: { id: 1, nama: 'Flashdisk' } },
-      { id: 'dp6', kuantitas: 1, produk: { id: 4, nama: 'Raspberry Pi' } },
-    ],
-  },
-];
+
 
 export default function DataPeminjamanPage() {
-  const [pengajuanList, setPengajuanList] = useState<Pengajuan[]>(DUMMY_PENGAJUAN);
-  const [loading, setLoading] = useState(false);
+  const [pengajuanList, setPengajuanList] = useState<Pengajuan[]>([]);
+  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<StatusPengajuan | 'SEMUA'>('SEMUA');
+
+  // Return modal state (kept for future implementation/UI consistency)
   const [returnModalOpen, setReturnModalOpen] = useState(false);
   const [selectedPengajuanReturn, setSelectedPengajuanReturn] = useState<Pengajuan | null>(null);
-  const [kondisiBarang, setKondisiBarang] = useState('bagus');
-  const [letakBarang, setLetakBarang] = useState('');
+  const [kondisiBarang, setKondisiBarang] = useState('BAIK');
+
+  // Location Autofill State
+  const [lokasiList, setLokasiList] = useState<any[]>([]);
+  const [lokasiSearchQuery, setLokasiSearchQuery] = useState('');
+  const [showLokasiDropdown, setShowLokasiDropdown] = useState(false);
+  const [selectedRuang, setSelectedRuang] = useState<string | null>(null);
+  const [selectedLokasiId, setSelectedLokasiId] = useState<number | null>(null);
+
+
+
+  const fetchPeminjaman = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/peminjaman');
+      if (res.ok) {
+        const data = await res.json();
+        setPengajuanList(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch peminjaman:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPeminjaman();
+    fetchLokasi();
+  }, []);
+
+  const fetchLokasi = async () => {
+    try {
+      const res = await fetch('/api/lokasi');
+      if (res.ok) {
+        const data = await res.json();
+        setLokasiList(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch lokasi:', error);
+    }
+  };
+
+  // Location Filtering Logic
+  const filteredLokasi = (() => {
+    if (!selectedRuang) {
+      const uniqueRuangs = Array.from(new Set(lokasiList.map(l => l.nama_ruang)));
+      return uniqueRuangs
+        .filter(ruang => ruang.toLowerCase().includes(lokasiSearchQuery.toLowerCase()))
+        .map(ruang => ({ type: 'ruang', value: ruang }));
+    } else {
+      return lokasiList
+        .filter(l => l.nama_ruang === selectedRuang)
+        .filter(l => l.keterangan.toLowerCase().includes(lokasiSearchQuery.toLowerCase()))
+        .map(l => ({ type: 'lokasi', value: l }));
+    }
+  })();
+
+  const createNewLocation = async (ruang: string, keterangan: string) => {
+    try {
+      const response = await fetch('/api/lokasi', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nama_ruang: ruang, keterangan }),
+      });
+
+      if (!response.ok) throw new Error('Failed to create location');
+
+      const newLokasi = await response.json();
+      setLokasiList(prev => [...prev, newLokasi]);
+      setSelectedLokasiId(newLokasi.id);
+      setLokasiSearchQuery(newLokasi.keterangan);
+      setShowLokasiDropdown(false);
+    } catch (error) {
+      console.error('Error creating location:', error);
+      alert('Gagal membuat lokasi baru');
+    }
+  };
+
+  const handleSelectLokasiItem = async (item: any) => {
+    if (item.type === 'ruang') {
+      setSelectedRuang(item.value);
+      setLokasiSearchQuery('');
+      setShowLokasiDropdown(true);
+    } else if (item.type === 'lokasi') {
+      const lokasi = item.value;
+      setSelectedLokasiId(lokasi.id);
+      setLokasiSearchQuery(''); // Just show selected state
+      setShowLokasiDropdown(false);
+    } else if (item.type === 'new_ruang') {
+      setSelectedRuang(lokasiSearchQuery);
+      setLokasiSearchQuery('');
+      setShowLokasiDropdown(true);
+    } else if (item.type === 'new_lokasi') {
+      await createNewLocation(selectedRuang!, lokasiSearchQuery);
+      setLokasiSearchQuery('');
+    }
+  };
+
+  const handleClearLokasi = () => {
+    setSelectedLokasiId(null);
+    setLokasiSearchQuery('');
+    setShowLokasiDropdown(true);
+  };
+
+  const handleClearRuang = () => {
+    setSelectedRuang(null);
+    setLokasiSearchQuery('');
+    setSelectedLokasiId(null);
+    setShowLokasiDropdown(true);
+  };
+
+  const selectedKeterangan = selectedLokasiId
+    ? lokasiList.find(l => l.id === selectedLokasiId)?.keterangan
+    : null;
+
+  const handleTolak = async (id: string) => {
+    if (!confirm('Apakah anda yakin ingin menolak pengajuan ini? Data akan dihapus permanen.')) return;
+
+    try {
+      const res = await fetch(`/api/peminjaman?id=${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        fetchPeminjaman();
+      } else {
+        alert('Gagal menolak pengajuan');
+      }
+    } catch (e) {
+      console.error('Error deleting:', e);
+      alert('Terjadi kesalahan');
+    }
+  };
+
+  const handleConfirmReturn = async () => {
+    if (!selectedPengajuanReturn || (!selectedLokasiId && !lokasiSearchQuery && !selectedRuang)) {
+      alert('Mohon isi letak barang');
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/peminjaman?id=${selectedPengajuanReturn.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          status: 'KEMBALI',
+          condition: kondisiBarang,
+          // If we have an ID, send it. If not, try to construct a name from Ruang + Query (fallback)
+          id_lokasi: selectedLokasiId,
+          location_name: selectedLokasiId ? undefined : (selectedRuang || lokasiSearchQuery)
+        })
+      });
+
+      if (res.ok) {
+        setReturnModalOpen(false);
+        setSelectedPengajuanReturn(null);
+        // Reset Location State
+        setSelectedLokasiId(null);
+        setSelectedRuang(null);
+        setLokasiSearchQuery('');
+
+        fetchPeminjaman();
+      } else {
+        alert('Gagal memproses pengembalian');
+      }
+    } catch (e) {
+      console.error('Error returning:', e);
+      alert('Terjadi kesalahan');
+    }
+  };
 
   const filteredList = pengajuanList.filter((p) => {
     const matchStatus =
@@ -161,8 +258,8 @@ export default function DataPeminjamanPage() {
     KEMBALI: pengajuanList.filter((p) => p.status === 'KEMBALI').length,
   };
 
-  const summaryCards: { key: 'SEMUA' | StatusPengajuan; label: string; count: number; primary?: boolean }[] = [
-    { key: 'SEMUA', label: 'Semua', count: counts.SEMUA, primary: true },
+  const summaryCards: { key: 'SEMUA' | StatusPengajuan; label: string; count: number }[] = [
+    { key: 'SEMUA', label: 'Semua', count: counts.SEMUA },
     { key: 'DIAJUKAN', label: 'Diajukan', count: counts.DIAJUKAN },
     { key: 'DIPINJAM', label: 'Dipinjam', count: counts.DIPINJAM },
     { key: 'TERLAMBAT', label: 'Terlambat', count: counts.TERLAMBAT },
@@ -192,8 +289,7 @@ export default function DataPeminjamanPage() {
             color: '#333333',
             fontSize: '32px',
             fontWeight: 700,
-            marginBottom: '8px',
-            margin: 0,
+            marginBottom: '8px'
           }}
         >
           Peminjaman
@@ -203,8 +299,7 @@ export default function DataPeminjamanPage() {
             color: '#666666',
             fontSize: '16px',
             fontWeight: 400,
-            marginBottom: '24px',
-            margin: 0,
+            marginBottom: '32px'
           }}
         >
           Kelola pengajuan dan status peminjaman barang lab
@@ -220,7 +315,8 @@ export default function DataPeminjamanPage() {
         >
           {summaryCards.map((card) => {
             const isSelected = statusFilter === card.key;
-            const isPrimary = card.primary && isSelected;
+            // Use primary style if selected, regardless of which tab it is
+            const isPrimary = isSelected;
             return (
               <button
                 key={card.key}
@@ -235,7 +331,7 @@ export default function DataPeminjamanPage() {
                   justifyContent: 'center',
                   padding: '16px 12px',
                   borderRadius: '12px',
-                  border: isPrimary ? 'none' : isSelected ? '2px solid #2F516A' : '1px solid #E0E0E0',
+                  border: isPrimary ? 'none' : '1px solid #E0E0E0',
                   background: isPrimary ? '#2F516A' : '#FFFFFF',
                   color: isPrimary ? '#FFFFFF' : '#333333',
                   fontSize: '14px',
@@ -243,6 +339,7 @@ export default function DataPeminjamanPage() {
                   cursor: 'pointer',
                   fontFamily: 'inherit',
                   boxShadow: isPrimary ? '0 2px 4px rgba(0,0,0,0.1)' : 'none',
+                  transition: 'all 0.2s ease'
                 }}
               >
                 <span style={{ fontSize: '24px', fontWeight: 700, lineHeight: 1.2 }}>
@@ -330,7 +427,7 @@ export default function DataPeminjamanPage() {
                 color: '#666666',
               }}
             >
-              Memuat...
+              Memuat data peminjaman...
             </div>
           ) : filteredList.length === 0 ? (
             <div
@@ -549,105 +646,116 @@ export default function DataPeminjamanPage() {
                               alignItems: 'center',
                             }}
                           >
-                            <Link
-                              href={`/data-peminjaman/proses/${p.id}`}
-                              title="Proses Peminjaman"
-                              style={{
-                                width: '32px',
-                                height: '32px',
-                                borderRadius: '50%',
-                                border: '1px solid #E0E0E0',
-                                background: '#FFFFFF',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                textDecoration: 'none',
-                              }}
-                            >
-                              <svg
-                                width="14"
-                                height="14"
-                                viewBox="0 0 16 16"
-                                fill="none"
-                                xmlns="http://www.w3.org/2000/svg"
+                            {p.status === 'DIAJUKAN' && (
+                              <>
+                                <Link
+                                  href={`/data-peminjaman/proses/${p.id}`}
+                                  title="Proses Peminjaman"
+                                  style={{
+                                    width: '32px',
+                                    height: '32px',
+                                    borderRadius: '50%',
+                                    border: '1px solid #E0E0E0',
+                                    background: '#FFFFFF',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    textDecoration: 'none',
+                                  }}
+                                >
+                                  <svg
+                                    width="14"
+                                    height="14"
+                                    viewBox="0 0 16 16"
+                                    fill="none"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                  >
+                                    <path
+                                      d="M13 4L6 11L3 8"
+                                      stroke="#666666"
+                                      strokeWidth="2"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                    />
+                                  </svg>
+                                </Link>
+                                <button
+                                  type="button"
+                                  title="Tolak"
+                                  onClick={() => handleTolak(p.id)}
+                                  style={{
+                                    width: '32px',
+                                    height: '32px',
+                                    borderRadius: '50%',
+                                    border: '1px solid #E0E0E0',
+                                    background: '#FFFFFF',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                  }}
+                                >
+                                  <svg
+                                    width="14"
+                                    height="14"
+                                    viewBox="0 0 16 16"
+                                    fill="none"
+                                    xmlns="http://www.w3.org/2000/svg"
+                                  >
+                                    <path
+                                      d="M12 4L4 12M4 4l8 8"
+                                      stroke="#666666"
+                                      strokeWidth="2"
+                                      strokeLinecap="round"
+                                    />
+                                  </svg>
+                                </button>
+                              </>
+                            )}
+
+                            {p.status === 'DIPINJAM' && (
+                              <button
+                                type="button"
+                                title="Pengembalian Barang"
+                                onClick={() => {
+                                  setSelectedPengajuanReturn(p);
+                                  setKondisiBarang('BAIK');
+                                  // Reset Location State
+                                  setSelectedLokasiId(null);
+                                  setSelectedRuang(null);
+                                  setLokasiSearchQuery('');
+                                  setReturnModalOpen(true);
+                                }}
+                                style={{
+                                  width: '32px',
+                                  height: '32px',
+                                  borderRadius: '50%',
+                                  border: '1px solid #E0E0E0',
+                                  background: '#FFFFFF',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                }}
                               >
-                                <path
-                                  d="M13 4L6 11L3 8"
-                                  stroke="#666666"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              </svg>
-                            </Link>
-                            <button
-                              type="button"
-                              title="Tolak"
-                              style={{
-                                width: '32px',
-                                height: '32px',
-                                borderRadius: '50%',
-                                border: '1px solid #E0E0E0',
-                                background: '#FFFFFF',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                              }}
-                            >
-                              <svg
-                                width="14"
-                                height="14"
-                                viewBox="0 0 16 16"
-                                fill="none"
-                                xmlns="http://www.w3.org/2000/svg"
-                              >
-                                <path
-                                  d="M12 4L4 12M4 4l8 8"
-                                  stroke="#666666"
-                                  strokeWidth="2"
-                                  strokeLinecap="round"
-                                />
-                              </svg>
-                            </button>
-                            <button
-                              type="button"
-                              title="Pengembalian Barang"
-                              onClick={() => {
-                                setSelectedPengajuanReturn(p);
-                                setKondisiBarang('bagus');
-                                setLetakBarang('');
-                                setReturnModalOpen(true);
-                              }}
-                              style={{
-                                width: '32px',
-                                height: '32px',
-                                borderRadius: '50%',
-                                border: '1px solid #E0E0E0',
-                                background: '#FFFFFF',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                              }}
-                            >
-                              <svg
-                                width="14"
-                                height="14"
-                                viewBox="0 0 16 16"
-                                fill="none"
-                                xmlns="http://www.w3.org/2000/svg"
-                              >
-                                <path
-                                  d="M6 12L2 8l4-4M2 8h9a2 2 0 012 2v1"
-                                  stroke="#666666"
-                                  strokeWidth="1.5"
-                                  strokeLinecap="round"
-                                  strokeLinejoin="round"
-                                />
-                              </svg>
-                            </button>
+                                <svg
+                                  width="14"
+                                  height="14"
+                                  viewBox="0 0 16 16"
+                                  fill="none"
+                                  xmlns="http://www.w3.org/2000/svg"
+                                >
+                                  <path
+                                    d="M6 12L2 8l4-4M2 8h9a2 2 0 012 2v1"
+                                    stroke="#666666"
+                                    strokeWidth="1.5"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                  />
+                                </svg>
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>
@@ -659,6 +767,7 @@ export default function DataPeminjamanPage() {
           )}
         </div>
       </div>
+
 
       {/* Modal Pengembalian Barang */}
       {returnModalOpen && (
@@ -760,8 +869,8 @@ export default function DataPeminjamanPage() {
                     outline: 'none',
                   }}
                 >
-                  <option value="bagus">Bagus</option>
-                  <option value="rusak">Rusak</option>
+                  <option value="BAIK">Baik</option>
+                  <option value="RUSAK">Rusak</option>
                 </select>
                 <div
                   style={{
@@ -792,33 +901,207 @@ export default function DataPeminjamanPage() {
               >
                 Letak
               </label>
-              <input
-                type="text"
-                value={letakBarang}
-                onChange={(e) => setLetakBarang(e.target.value)}
-                placeholder="Ketik letak barang disini..."
-                style={{
-                  width: '100%',
-                  padding: '12px 16px',
+
+              <div style={{ position: 'relative' }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
                   border: '1px solid #E0E0E0',
                   borderRadius: '8px',
-                  fontSize: '14px',
-                  color: letakBarang ? '#333333' : '#9CA3AF',
                   background: '#FFFFFF',
-                  fontFamily: 'inherit',
-                  outline: 'none',
-                }}
-              />
+                  padding: '8px 12px',
+                  gap: '8px'
+                }}>
+                  {/* Chip for Selected Ruang */}
+                  {selectedRuang && (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      background: '#ECEFF1',
+                      borderRadius: '16px',
+                      padding: '4px 12px',
+                      gap: '8px',
+                      width: 'auto',
+                      minWidth: '100px',
+                      maxWidth: '45%'
+                    }}>
+                      <span style={{
+                        fontSize: '12px',
+                        fontWeight: 500,
+                        color: '#333333',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        flex: 1
+                      }}>
+                        {selectedRuang}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleClearRuang}
+                        style={{
+                          border: 'none',
+                          color: '#1E1E1E',
+                          cursor: 'pointer',
+                          padding: 0,
+                          display: 'flex',
+                          alignItems: 'center',
+                          background: 'transparent'
+                        }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M18 6L6 18M6 6l12 12" stroke="#666666" strokeWidth="2" strokeLinecap="round" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Chip for Selected Keterangan (Lokasi) */}
+                  {selectedKeterangan && (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      background: '#E0F2F1', // Greenish tint
+                      borderRadius: '16px',
+                      padding: '4px 12px',
+                      gap: '6px',
+                      width: 'auto',
+                      minWidth: '100px',
+                      maxWidth: '45%'
+                    }}>
+                      <span style={{
+                        fontSize: '12px',
+                        fontWeight: 500,
+                        color: '#00695C',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis',
+                        flex: 1
+                      }}>
+                        {selectedKeterangan}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleClearLokasi}
+                        style={{
+                          border: 'none',
+                          background: 'transparent',
+                          color: '#1E1E1E',
+                          cursor: 'pointer',
+                          padding: 0,
+                          display: 'flex',
+                          alignItems: 'center'
+                        }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                          <path d="M18 6L6 18M6 6l12 12" stroke="#666666" strokeWidth="2" strokeLinecap="round" />
+                        </svg>
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Input Field - Hide if Keterangan is selected */}
+                  {!selectedKeterangan && (
+                    <input
+                      type="text"
+                      value={lokasiSearchQuery}
+                      onChange={(e) => {
+                        setLokasiSearchQuery(e.target.value);
+                        setShowLokasiDropdown(true);
+                      }}
+                      onFocus={() => setShowLokasiDropdown(true)}
+                      onBlur={() => setTimeout(() => setShowLokasiDropdown(false), 200)}
+                      placeholder={selectedRuang ? "Ketik keterangan spesifik..." : "Pilih Ruangan"}
+                      style={{
+                        border: 'none',
+                        outline: 'none',
+                        width: '100%',
+                        fontSize: '14px',
+                        color: lokasiSearchQuery ? '#000000' : '#999999',
+                        fontFamily: 'inherit',
+                        flex: 1
+                      }}
+                    />
+                  )}
+                </div>
+
+                {/* Lokasi Dropdown */}
+                {showLokasiDropdown && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    right: 0,
+                    marginTop: '4px',
+                    background: '#FFFFFF',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                    border: '1px solid #F3F4F6',
+                    maxHeight: '200px',
+                    overflowY: 'auto',
+                    zIndex: 20
+                  }}>
+                    {filteredLokasi.map((item, index) => (
+                      <div
+                        key={index}
+                        onClick={() => handleSelectLokasiItem(item)}
+                        style={{
+                          padding: '12px 16px',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                          color: '#333333',
+                          borderBottom: '1px solid #F9FAFB'
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = '#F9FAFB'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = '#FFFFFF'; }}
+                      >
+                        {item.type === 'ruang' ? (item.value as string) : (item.value as any).keterangan}
+                      </div>
+                    ))}
+
+                    {!selectedRuang && !filteredLokasi.some(i => i.type === 'ruang' && i.value === lokasiSearchQuery) && lokasiSearchQuery && (
+                      <div
+                        onClick={() => handleSelectLokasiItem({ type: 'new_ruang' })}
+                        style={{
+                          padding: '12px 16px',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                          color: '#2F516A',
+                          fontWeight: 500,
+                          borderTop: '1px solid #F3F4F6'
+                        }}
+                      >
+                        + Tambahkan ruang baru "{lokasiSearchQuery}"
+                      </div>
+                    )}
+
+                    {selectedRuang && !filteredLokasi.some(i => i.type === 'lokasi' && (i.value as any).keterangan === lokasiSearchQuery) && lokasiSearchQuery && (
+                      <div
+                        onClick={() => handleSelectLokasiItem({ type: 'new_lokasi' })}
+                        style={{
+                          padding: '12px 16px',
+                          cursor: 'pointer',
+                          fontSize: '14px',
+                          color: '#2F516A',
+                          fontWeight: 500,
+                          borderTop: '1px solid #F3F4F6'
+                        }}
+                      >
+                        + Tambahkan lokasi baru di {selectedRuang} "{lokasiSearchQuery}"
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Action Buttons */}
             <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-start' }}>
               <button
                 type="button"
-                onClick={() => {
-                  setReturnModalOpen(false);
-                  setSelectedPengajuanReturn(null);
-                }}
+                onClick={handleConfirmReturn}
                 style={{
                   padding: '12px 24px',
                   background: '#2F516A',
