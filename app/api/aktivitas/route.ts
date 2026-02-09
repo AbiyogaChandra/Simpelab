@@ -6,9 +6,15 @@ export async function GET(request: Request) {
     const tag = searchParams.get('tag');
 
     try {
-        const whereClause = (tag && tag !== 'all')
-            ? { kategori: { contains: tag } }
-            : {};
+        const whereClause: any = {};
+        if (tag && tag !== 'all' && tag !== 'Semua') {
+            whereClause.OR = [
+                { kategori: { equals: tag } },
+                { kategori: { startsWith: `${tag},` } },
+                { kategori: { endsWith: `, ${tag}` } },
+                { kategori: { contains: `, ${tag},` } }
+            ];
+        }
 
         const aktivitas = await prisma.aktivitas.findMany({
             where: whereClause,
