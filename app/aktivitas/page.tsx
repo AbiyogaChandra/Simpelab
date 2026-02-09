@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Sidebar from '@/components/Sidebar';
 
-export default function LogPerubahanPage() {
+export default function AktivitasPage() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('');
 
@@ -81,7 +81,7 @@ export default function LogPerubahanPage() {
           fontWeight: 700,
           marginBottom: '8px'
         }}>
-          Log Perubahan
+          Aktivitas
         </h1>
         <p style={{
           color: '#666666',

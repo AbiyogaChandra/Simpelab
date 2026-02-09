@@ -48,7 +48,7 @@ export default function Sidebar() {
         },
         {
             name: 'Aktivitas',
-            path: '/log-perubahan',
+            path: '/aktivitas',
             icon: (active: boolean) => (
                 <iconify-icon
                     icon="nrk:live-activity"
@@ -96,7 +96,7 @@ export default function Sidebar() {
             {/* Footer Menu */}
             <div className="p-4 border-t border-[#E5E5E5] flex flex-col gap-1">
                 {/* Keluar */}
-                <div 
+                <div
                     onClick={async () => {
                         try {
                             await fetch('/api/auth/logout', { method: 'POST' });
