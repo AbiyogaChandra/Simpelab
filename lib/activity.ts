@@ -5,33 +5,29 @@ import { PrismaClient } from "@prisma/client/extension";
 // but usually it's fine. For now, I'll accept prisma as an argument to be safe and transaction-friendly.
 
 export async function logActivity(
-    prisma: any, // Using any for now to support TransactionClient types easily
+    prisma: any,
     kategori: string,
     keterangan: string,
-    id_admin: string = "ADMIN_ID" // Placeholder, should be replaced with actual admin ID from session
+    id_admin: string | null = null,
+    id_peminjam: string | null = null
 ) {
     try {
-        // In a real app, we would get the admin ID from the session/token.
-        // For now, if id_admin is not provided or is default, we might need a fallback or find an admin.
-        // Let's assume there's at least one admin seeded or we fetch one.
-        
         let adminId = id_admin;
-        if (adminId === "ADMIN_ID") {
-            // Fallback: try to find the first admin
-            const firstAdmin = await prisma.admin.findFirst();
-            if (firstAdmin) {
-                adminId = firstAdmin.id;
-            } else {
-                console.warn("No admin found to link activity log");
-                return; // Cannot log without admin
-            }
-        }
+        
+        // Only try to find a default admin if neither admin nor peminjam is provided, 
+        // OR if only admin was expected but not provided (legacy behavior, though id_peminjam makes this tricky).
+        // Let's stick to: if id_admin is explicitly null, we might mean "no admin". 
+        // But the previous default was "ADMIN_ID".
+        // If we want to support user activities without admin, we should allow adminId to be null.
+        
+        // Use provided adminId if valid (not placeholder if we kept that, but I'll remove the default "ADMIN_ID" to be cleaner)
 
         await prisma.aktivitas.create({
             data: {
                 kategori,
                 keterangan,
                 id_admin: adminId,
+                id_peminjam: id_peminjam,
                 waktu: new Date()
             }
         });

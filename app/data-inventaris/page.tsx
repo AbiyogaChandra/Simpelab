@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Sidebar from '@/components/Sidebar';
+import { useRouter } from 'next/navigation';
+import QRCode from "react-qr-code";
 
 // Interfaces based on Prisma schema and API response
 interface Produk {
@@ -34,11 +36,19 @@ interface DetailProduk {
 }
 
 export default function DataInventarisPage() {
+  const router = useRouter();
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [selectedDetail, setSelectedDetail] = useState<DetailProduk | null>(null);
+
   const [kategori, setKategori] = useState('');
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState<'produk' | 'barang'>('produk');
   const [inventoryData, setInventoryData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Pagination State
+  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -60,6 +70,44 @@ export default function DataInventarisPage() {
 
     fetchData();
   }, [activeTab]);
+
+  const handleEdit = (id: number, type: 'produk' | 'detail') => {
+    if (type === 'produk') {
+      router.push(`/create-produk?id=${id}`);
+    } else {
+      router.push(`/create-detail-produk?id=${id}`);
+    }
+  };
+
+  const handleDelete = async (id: number, type: 'produk' | 'detail') => {
+    if (!confirm('Apakah Anda yakin ingin menghapus data ini?')) return;
+
+    try {
+      const endpoint = type === 'produk' ? `/api/produk?id=${id}` : `/api/detail-produk?id=${id}`;
+      const response = await fetch(endpoint, { method: 'DELETE' });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to delete');
+      }
+
+      alert('Data berhasil dihapus');
+      // Refresh data
+      const fetchEndpoint = activeTab === 'produk' ? '/api/produk' : '/api/detail-produk';
+      const res = await fetch(fetchEndpoint);
+      const data = await res.json();
+      setInventoryData(data);
+    } catch (error) {
+      console.error('Error deleting:', error);
+      alert('Gagal menghapus data: ' + (error as Error).message);
+    }
+  };
+
+  const handleView = (item: DetailProduk) => {
+    setSelectedDetail(item);
+    setViewModalOpen(true);
+  };
+
 
   // Filter data client-side based on search and kategori
   const filteredData = inventoryData.filter((item) => {
@@ -100,6 +148,17 @@ export default function DataInventarisPage() {
       return matchesSearch && matchesCategory;
     }
   });
+
+  // Reset pagination when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, kategori, activeTab]);
+
+  const totalItems = filteredData.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedData = filteredData.slice(startIndex, endIndex);
 
   return (
     <div style={{
@@ -144,161 +203,142 @@ export default function DataInventarisPage() {
               Kelola dan lihat semua data inventaris
             </p>
           </div>
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <Link
-              href="/create-produk"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '10px 20px',
-                background: '#2F516A',
-                color: '#FFFFFF',
-                borderRadius: '8px',
-                fontSize: '14px',
-                fontWeight: 600,
-                textDecoration: 'none',
-                fontFamily: 'inherit',
-                border: 'none',
-                cursor: 'pointer'
-              }}
-            >
-              <span>+</span>
-              Create Produk
-            </Link>
-            <Link
-              href="/create-barang"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '10px 20px',
-                background: '#2F516A',
-                color: '#FFFFFF',
-                borderRadius: '8px',
-                fontSize: '14px',
-                fontWeight: 600,
-                textDecoration: 'none',
-                fontFamily: 'inherit',
-                border: 'none',
-                cursor: 'pointer'
-              }}
-            >
-              <span>+</span>
-              Create Detail Produk
-            </Link>
-          </div>
+
+
         </div>
 
-        {/* Tabs and Filter Bar */}
+        {/* Controls Row */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+             {/* Tabs */}
+             <div style={{ display: 'flex', gap: '12px' }}>
+                <button
+                  onClick={() => setActiveTab('produk')}
+                  style={{
+                    padding: '10px 24px',
+                    borderRadius: '30px',
+                    border: 'none',
+                    background: activeTab === 'produk' ? '#2F516A' : '#FFFFFF',
+                    color: activeTab === 'produk' ? '#FFFFFF' : '#666666',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    boxShadow: activeTab === 'produk' ? '0 4px 6px -1px rgba(47, 81, 106, 0.2)' : 'none',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <iconify-icon icon="gridicons:product" width="20" />
+                  Produk
+                </button>
+
+                <button
+                  onClick={() => setActiveTab('barang')}
+                  style={{
+                    padding: '10px 24px',
+                    borderRadius: '30px',
+                    border: 'none',
+                    background: activeTab === 'barang' ? '#2F516A' : '#FFFFFF',
+                    color: activeTab === 'barang' ? '#FFFFFF' : '#666666',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    boxShadow: activeTab === 'barang' ? '0 4px 6px -1px rgba(47, 81, 106, 0.2)' : 'none',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <iconify-icon icon="ep:goods-filled" width="20" />
+                  Detail Produk
+                </button>
+             </div>
+
+             {/* Actions */}
+             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                <Link
+                  href="/create-produk"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '10px 20px',
+                    background: '#FFFFFF',
+                    color: '#2F516A',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                    border: '1px solid #E0E0E0',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <iconify-icon icon="lucide:plus" width="16" />
+                  Buat Produk
+                </Link>
+                <Link
+                  href="/create-detail-produk"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '10px 20px',
+                    background: '#FFFFFF',
+                    color: '#2F516A',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    textDecoration: 'none',
+                    border: '1px solid #E0E0E0',
+                    transition: 'all 0.2s'
+                  }}
+                >
+                  <iconify-icon icon="lucide:plus" width="16" />
+                  Buat Detail Produk
+                </Link>
+             </div>
+        </div>
+
+        {/* Filter Card Top */}
         <div style={{
           background: '#FFFFFF',
-          borderRadius: '12px',
-          padding: '16px 24px',
-          marginBottom: '24px',
-          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '16px'
+          borderRadius: '12px 12px 0 0',
+          padding: '24px',
+          borderBottom: '1px solid #F0F0F0',
+          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)' // Added shadow match
         }}>
-          {/* Tabs */}
-          <div style={{
-            display: 'flex',
-            gap: '8px',
-            borderBottom: '2px solid #F5F5F5'
-          }}>
-            {/* Produk Tab */}
-            <button
-              onClick={() => setActiveTab('produk')}
-              style={{
-                padding: '12px 24px',
-                border: 'none',
-                background: 'transparent',
-                borderBottom: activeTab === 'produk' ? '2px solid #2F516A' : '2px solid transparent',
-                color: activeTab === 'produk' ? '#2F516A' : '#666666',
-                fontSize: '16px',
-                fontWeight: activeTab === 'produk' ? 600 : 400,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                fontFamily: 'inherit',
-                marginBottom: '-2px'
-              }}
-            >
-              <iconify-icon
-                icon="gridicons:product"
-                height="24"
-              />
-              Produk
-            </button>
-
-            {/* Detail Produk Tab */}
-            <button
-              onClick={() => setActiveTab('barang')}
-              style={{
-                padding: '12px 24px',
-                border: 'none',
-                background: 'transparent',
-                borderBottom: activeTab === 'barang' ? '2px solid #2F516A' : '2px solid transparent',
-                color: activeTab === 'barang' ? '#2F516A' : '#666666',
-                fontSize: '16px',
-                fontWeight: activeTab === 'barang' ? 600 : 400,
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                fontFamily: 'inherit',
-                marginBottom: '-2px'
-              }}
-            >
-              <iconify-icon
-                icon="ep:goods-filled"
-                height="24"
-              />
-              Detail Produk
-            </button>
-          </div>
-
-          {/* Filter Bar */}
           <div style={{
             display: 'flex',
             gap: '16px',
-            alignItems: 'flex-end'
+            alignItems: 'center'
           }}>
             {/* Kategori Dropdown */}
             <div style={{
               position: 'relative',
               minWidth: '200px'
             }}>
-              <label style={{
-                display: 'block',
-                color: '#333333',
-                fontSize: '14px',
-                fontWeight: 600,
-                marginBottom: '8px'
-              }}>
-                Kategori
-              </label>
               <div style={{ position: 'relative' }}>
                 <select
                   value={kategori}
                   onChange={(e) => setKategori(e.target.value)}
                   style={{
                     width: '100%',
-                    padding: '12px 16px',
+                    padding: '10px 16px',
                     paddingLeft: '40px',
                     paddingRight: '40px',
                     border: '1px solid #E0E0E0',
                     borderRadius: '8px',
                     fontSize: '14px',
-                    color: kategori ? '#000000' : '#999999',
-                    background: '#FFFFFF',
+                    color: kategori ? '#000000' : '#666666',
+                    background: '#F9FAFB',
                     appearance: 'none',
-                    fontFamily: 'inherit'
+                    fontFamily: 'inherit',
+                    cursor: 'pointer'
                   }}
                 >
-                  <option value="">Semua Kategori</option>
+                  <option value="">Kategori</option>
                   <option value="aset">Aset</option>
                   <option value="hp">Habis Pakai</option>
                 </select>
@@ -307,24 +347,21 @@ export default function DataInventarisPage() {
                   left: '12px',
                   top: '50%',
                   transform: 'translateY(-50%)',
-                  pointerEvents: 'none'
+                  pointerEvents: 'none',
+                  display: 'flex',
+                  alignItems: 'center'
                 }}>
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="4" cy="4" r="1.5" fill="#666666" />
-                    <circle cx="8" cy="4" r="1.5" fill="#666666" />
-                    <circle cx="12" cy="4" r="1.5" fill="#666666" />
-                  </svg>
+                  <iconify-icon icon="material-symbols:category-rounded" style={{ color: '#666666' }} width="16" />
                 </div>
                 <div style={{
                   position: 'absolute',
                   right: '12px',
                   top: '50%',
                   transform: 'translateY(-50%)',
-                  pointerEvents: 'none'
+                  pointerEvents: 'none',
+                  display: 'flex'
                 }}>
-                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M1 1L6 6L11 1" stroke="#666666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
+                  <iconify-icon icon="lucide:chevron-down" style={{ color: '#666666' }} width="16" />
                 </div>
               </div>
             </div>
@@ -334,29 +371,20 @@ export default function DataInventarisPage() {
               flex: 1,
               position: 'relative'
             }}>
-              <label style={{
-                display: 'block',
-                color: '#333333',
-                fontSize: '14px',
-                fontWeight: 600,
-                marginBottom: '8px'
-              }}>
-                Cari
-              </label>
               <div style={{ position: 'relative' }}>
                 <input
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  placeholder={activeTab === 'produk' ? "Cari nama, kode, atau merk..." : "Cari nama barang atau kode seri..."}
+                  placeholder={activeTab === 'produk' ? "Cari nama, kode, atau merk..." : "Cari nama, kode seri..."}
                   style={{
                     width: '100%',
-                    padding: '12px 16px',
+                    padding: '10px 16px',
                     paddingLeft: '40px',
                     border: '1px solid #E0E0E0',
                     borderRadius: '8px',
                     fontSize: '14px',
-                    color: search ? '#000000' : '#999999',
+                    color: search ? '#000000' : '#666666',
                     background: '#FFFFFF',
                     fontFamily: 'inherit'
                   }}
@@ -366,23 +394,23 @@ export default function DataInventarisPage() {
                   left: '12px',
                   top: '50%',
                   transform: 'translateY(-50%)',
-                  pointerEvents: 'none'
+                  pointerEvents: 'none',
+                  display: 'flex',
+                  alignItems: 'center'
                 }}>
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <circle cx="7" cy="7" r="5" stroke="#666666" strokeWidth="1.5" />
-                    <path d="M11 11L14 14" stroke="#666666" strokeWidth="1.5" strokeLinecap="round" />
-                  </svg>
+                   <iconify-icon icon="lucide:search" style={{ color: '#666666' }} width="16" />
                 </div>
               </div>
             </div>
           </div>
         </div>
 
+
         {/* Conditional Rendering: Table or Empty State */}
         {loading ? (
           <div style={{
             background: '#FFFFFF',
-            borderRadius: '12px',
+            borderRadius: '0 0 12px 12px',
             padding: '80px 32px',
             boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
             display: 'flex',
@@ -396,7 +424,7 @@ export default function DataInventarisPage() {
           /* Table */
           <div style={{
             background: '#FFFFFF',
-            borderRadius: '12px',
+            borderRadius: '0 0 12px 12px',
             boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
             overflow: 'hidden'
           }}>
@@ -434,13 +462,14 @@ export default function DataInventarisPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredData.map((item, index) => {
+                  {paginatedData.map((item, index) => {
+                    const globalIndex = startIndex + index + 1; // Calculate global index for "No" column
                     // Render for Produk
                     if (activeTab === 'produk') {
                       const p = item as Produk;
                       return (
                         <tr key={p.id} style={{ borderBottom: '1px solid #F0F0F0' }}>
-                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{index + 1}</td>
+                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{globalIndex}</td>
                           <td style={{ padding: '16px' }}>
                             <span style={{
                               display: 'inline-block',
@@ -486,21 +515,19 @@ export default function DataInventarisPage() {
                           </td>
                           <td style={{ padding: '16px' }}>
                             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                              <button style={{ border: 'none', background: 'transparent', cursor: 'pointer' }} title="View">
-                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                  <path d="M8 3C4.66667 3 2 5.66667 2 9C2 12.3333 4.66667 15 8 15C11.3333 15 14 12.3333 14 9C14 5.66667 11.3333 3 8 3Z" stroke="#666666" strokeWidth="1.5" />
-                                  <circle cx="8" cy="9" r="2" stroke="#666666" strokeWidth="1.5" />
-                                </svg>
+                              <button 
+                                onClick={() => handleEdit(p.id, 'produk')}
+                                style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#1E1E1E' }} 
+                                title="Edit"
+                              >
+                                <iconify-icon icon="material-symbols:edit-outline-rounded" width="18" height="18"></iconify-icon>
                               </button>
-                              <button style={{ border: 'none', background: 'transparent', cursor: 'pointer' }} title="Edit">
-                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                  <path d="M11.333 2A1.886 1.886 0 0 1 14 4.667L5 13.667l-3 1 1-3L11.333 2z" stroke="#666666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                </svg>
-                              </button>
-                              <button style={{ border: 'none', background: 'transparent', cursor: 'pointer' }} title="Delete">
-                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                  <path d="M2 4h12M5 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1m2 0v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4h10zM6 7v4M10 7v4" stroke="#666666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                </svg>
+                              <button 
+                                onClick={() => handleDelete(p.id, 'produk')}
+                                style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#E37158' }} 
+                                title="Delete"
+                              >
+                                <iconify-icon icon="fluent:delete-12-regular" width="18" height="18"></iconify-icon>
                               </button>
                             </div>
                           </td>
@@ -511,7 +538,7 @@ export default function DataInventarisPage() {
                       const d = item as DetailProduk;
                       return (
                         <tr key={d.id} style={{ borderBottom: '1px solid #F0F0F0' }}>
-                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{index + 1}</td>
+                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{globalIndex}</td>
                           <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{(d.produk?.kategori === 'ASET' ? 'Aset' : d.produk?.kategori === 'HP' ? 'Habis Pakai' : d.produk?.kategori) || '-'}</td>
                           <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{d.produk?.nama || '-'}</td>
                           <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{d.kode_seri || '-'}</td>
@@ -541,11 +568,26 @@ export default function DataInventarisPage() {
                           <td style={{ padding: '16px' }}>
                             {/* Actions */}
                             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                              <button style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}>
-                                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                  <path d="M8 3C4.66667 3 2 5.66667 2 9C2 12.3333 4.66667 15 8 15C11.3333 15 14 12.3333 14 9C14 5.66667 11.3333 3 8 3Z" stroke="#666666" strokeWidth="1.5" />
-                                  <circle cx="8" cy="9" r="2" stroke="#666666" strokeWidth="1.5" />
-                                </svg>
+                              <button 
+                                onClick={() => handleView(d)}
+                                style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#1E1E1E' }} 
+                                title="View"
+                              >
+                                <iconify-icon icon="lsicon:view-outline" width="18" height="18"></iconify-icon>
+                              </button>
+                              <button 
+                                onClick={() => handleEdit(d.id, 'detail')}
+                                style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#1E1E1E' }} 
+                                title="Edit"
+                              >
+                                <iconify-icon icon="material-symbols:edit-outline-rounded" width="18" height="18"></iconify-icon>
+                              </button>
+                              <button 
+                                onClick={() => handleDelete(d.id, 'detail')}
+                                style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#E37158' }} 
+                                title="Delete"
+                              >
+                                <iconify-icon icon="fluent:delete-12-regular" width="18" height="18"></iconify-icon>
                               </button>
                             </div>
                           </td>
@@ -566,56 +608,75 @@ export default function DataInventarisPage() {
               alignItems: 'center'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ color: '#666666', fontSize: '14px' }}>Show</span>
-                <select style={{
+                <select 
+                  value={itemsPerPage}
+                  onChange={(e) => setItemsPerPage(Number(e.target.value))}
+                  style={{
                   padding: '6px 12px',
+                  color: '#333333',
                   border: '1px solid #E0E0E0',
                   borderRadius: '6px',
                   fontSize: '14px',
-                  fontFamily: 'inherit'
+                  fontFamily: 'inherit',
+                  cursor: 'pointer'
                 }}>
                   <option value="5">5</option>
                   <option value="10">10</option>
                   <option value="20">20</option>
                 </select>
-                <span style={{ color: '#666666', fontSize: '14px' }}>Results: 1-{filteredData.length} of {filteredData.length}</span>
+                <span style={{ color: '#666666', fontSize: '14px' }}>
+                    Results: {totalItems > 0 ? startIndex + 1 : 0}-{Math.min(endIndex, totalItems)} of {totalItems}
+                </span>
               </div>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <button style={{
+                <button 
+                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  disabled={currentPage === 1}
+                  style={{
                   padding: '8px 16px',
                   border: '1px solid #E0E0E0',
                   borderRadius: '6px',
-                  background: '#FFFFFF',
-                  color: '#666666',
+                  background: currentPage === 1 ? '#F5F5F5' : '#FFFFFF',
+                  color: currentPage === 1 ? '#999999' : '#666666',
                   fontSize: '14px',
-                  cursor: 'pointer',
-                  fontFamily: 'inherit'
+                  cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                  fontFamily: 'inherit',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
                 }}>
-                  &lt; Previous
+                   Previous
                 </button>
-                <button style={{
-                  padding: '8px 16px',
-                  border: '1px solid #2F516A',
-                  borderRadius: '6px',
-                  background: '#2F516A',
-                  color: '#FFFFFF',
-                  fontSize: '14px',
-                  cursor: 'pointer',
-                  fontFamily: 'inherit'
+                
+                <div style={{
+                    padding: '8px 12px',
+                    borderRadius: '6px',
+                    background: '#FFFFFF',
+                    border: '1px solid #E0E0E0',
+                    color: '#333',
+                    fontSize: '14px',
+                    fontWeight: 500
                 }}>
-                  1
-                </button>
-                <button style={{
+                    {currentPage}
+                </div>
+
+                <button 
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === totalPages || totalPages === 0}
+                  style={{
                   padding: '8px 16px',
                   border: '1px solid #E0E0E0',
                   borderRadius: '6px',
-                  background: '#FFFFFF',
-                  color: '#666666',
+                  background: (currentPage === totalPages || totalPages === 0) ? '#F5F5F5' : '#FFFFFF',
+                  color: (currentPage === totalPages || totalPages === 0) ? '#999999' : '#666666',
                   fontSize: '14px',
-                  cursor: 'pointer',
-                  fontFamily: 'inherit'
+                  cursor: (currentPage === totalPages || totalPages === 0) ? 'not-allowed' : 'pointer',
+                  fontFamily: 'inherit',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px'
                 }}>
-                  Next &gt;
+                   Next
                 </button>
               </div>
             </div>
@@ -624,7 +685,7 @@ export default function DataInventarisPage() {
           /* Empty State */
           <div style={{
             background: '#FFFFFF',
-            borderRadius: '12px',
+            borderRadius: '0 0 12px 12px',
             padding: '80px 32px',
             boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
             display: 'flex',
@@ -667,6 +728,120 @@ export default function DataInventarisPage() {
           </div>
         )}
       </div>
+      {viewModalOpen && selectedDetail && (
+    <div style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 1000
+    }} onClick={() => setViewModalOpen(false)}>
+      <div style={{
+        background: 'white',
+        padding: '32px',
+        borderRadius: '16px',
+        width: '700px',
+        maxWidth: '90%',
+        position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '24px'
+      }} onClick={e => e.stopPropagation()}>
+        
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <div>
+              <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 700, color: '#1E1E1E' }}>Detail Produk</h2>
+              <p style={{ margin: 0, fontSize: '14px', color: '#666666' }}>{selectedDetail.produk.nama}</p>
+          </div>
+          <button onClick={() => setViewModalOpen(false)} style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}>
+             <iconify-icon icon="basil:cross-solid" width="24" height="24" style={{ color: '#666666' }}></iconify-icon>
+          </button>
+        </div>
+
+        {/* Content */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+            {/* Left: QR Code */}
+            <div style={{ 
+                background: '#F9FAFB', 
+                padding: '16px', 
+                borderRadius: '12px', 
+                display: 'flex', 
+                flexDirection: 'column', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                 border: '1px dashed #E0E0E0'
+            }}>
+                 {selectedDetail.kode_scan ? (
+                     <>
+                        <div style={{ background: 'white', padding: '16px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
+                            <QRCode
+                                value={selectedDetail.kode_scan}
+                                size={120}
+                                style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                                viewBox={`0 0 256 256`}
+                            />
+                        </div>
+                        <p style={{ marginTop: '12px', fontSize: '12px', fontWeight: 500, color: '#333' }}>{selectedDetail.kode_scan}</p>
+                     </>
+                 ) : (
+                     <>
+                        <div style={{ background: 'white', padding: '14px', borderRadius: '12px', boxShadow: 'none', border: '2px dashed #e0e0e0' }}>
+                            <QRCode
+                                value="PLACEHOLDER-QR-CODE"
+                                size={120}
+                                fgColor="#e0e0e0"
+                                style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                                viewBox={`0 0 256 256`}
+                            />
+                        </div>
+                        <div style={{ width: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999', marginTop: '12px', fontSize: '12px' }}>No QR</div>
+                     </>
+                 )}
+            </div>
+
+            {/* Right: Details */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div>
+                    <label style={{ display: 'block', fontSize: '12px', color: '#666', marginBottom: '4px' }}>Kode Seri</label>
+                    <div style={{ fontSize: '14px', fontWeight: 500, color: '#333' }}>{selectedDetail.kode_seri || '-'}</div>
+                </div>
+                <div>
+                    <label style={{ display: 'block', fontSize: '12px', color: '#666', marginBottom: '4px' }}>Kondisi</label>
+                    <div style={{ fontSize: '14px', fontWeight: 500, color: '#333' }}>{selectedDetail.kondisi}</div>
+                </div>
+                <div>
+                    <label style={{ display: 'block', fontSize: '12px', color: '#666', marginBottom: '4px' }}>Lokasi</label>
+                    <div style={{ fontSize: '14px', fontWeight: 500, color: '#333' }}>
+                        {selectedDetail.lokasi.nama_ruang}
+                        <br/>
+                        <span style={{ fontSize: '12px', color: '#666' }}>{selectedDetail.lokasi.keterangan}</span>
+                    </div>
+                </div>
+                <div>
+                    <label style={{ display: 'block', fontSize: '12px', color: '#666', marginBottom: '4px' }}>Status</label>
+                     <span style={{
+                        display: 'inline-block',
+                        padding: '4px 10px',
+                        borderRadius: '12px',
+                        background: selectedDetail.status === 'TERSEDIA' ? '#D1FAE5' : '#FEE2E2',
+                        color: selectedDetail.status === 'TERSEDIA' ? '#065F46' : '#991B1B',
+                        fontSize: '12px',
+                        fontWeight: 500
+                      }}>
+                        {selectedDetail.status}
+                      </span>
+                </div>
+            </div>
+        </div>
+      </div>
+    </div>
+  )}
     </div>
   );
 }

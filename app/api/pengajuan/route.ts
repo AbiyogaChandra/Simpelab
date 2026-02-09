@@ -11,7 +11,7 @@ const createPengajuanSchema = z.object({
       kuantitas: z.number().int().positive(),
     }),
   ),
-  alasan: z.string().min(1),
+  catatan: z.string().min(1),
   tanggal_pinjam: z.string().datetime().or(z.string()), // Accept ISO string
   tanggal_kembali: z
     .string()
@@ -21,8 +21,15 @@ const createPengajuanSchema = z.object({
     .or(z.literal("")),
 });
 
+import { getCurrentSession } from "@/lib/auth";
+
 export async function GET(request: Request) {
   try {
+    const session = await getCurrentSession();
+    if (!session) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { searchParams } = new URL(request.url);
     const limitParam = searchParams.get("limit");
     const take = limitParam ? Math.min(parseInt(limitParam, 10) || 10, 500) : 10;
@@ -64,7 +71,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const { id_peminjam, items, alasan, tanggal_pinjam, tanggal_kembali } =
+    const { id_peminjam, items, catatan, tanggal_pinjam, tanggal_kembali } =
       validation.data;
 
     // Generate kode_resi: DDMMYYYY-XXX
@@ -100,6 +107,15 @@ export async function POST(request: Request) {
     const parseDate = (d: string | undefined | null) =>
       d ? new Date(d) : null;
 
+    // Fetch Peminjam details for logging
+    const peminjamData = await prisma.peminjam.findUnique({
+        where: { id: id_peminjam }
+    });
+
+    if (!peminjamData) {
+        return NextResponse.json({ error: "Peminjam not found" }, { status: 404 });
+    }
+
     // Transaction to ensure data consistency
     const pengajuan = await prisma.$transaction(async (tx) => {
       // 1. Create Pengajuan
@@ -107,12 +123,14 @@ export async function POST(request: Request) {
         data: {
           status: "DIAJUKAN",
           id_peminjam,
-          alasan,
+          catatan,
           tanggal_pinjam: new Date(tanggal_pinjam),
           tanggal_kembali: parseDate(tanggal_kembali),
           kode_resi,
         },
       });
+
+      const productDescriptions: string[] = [];
 
       // 2. Process Items
       for (const item of items) {
@@ -122,6 +140,8 @@ export async function POST(request: Request) {
         });
 
         if (!produk) throw new Error(`Product ID ${item.id_produk} not found`);
+
+        productDescriptions.push(`${item.kuantitas} ${produk.nama}`);
 
         // Create DetailPengajuan
         await tx.detailPengajuan.create({
@@ -137,10 +157,17 @@ export async function POST(request: Request) {
       }
 
       // Log Activity
+      // Format: "Peminjaman baru : {nama peminjam} - {kelas peminjam} - {nomor induk peminjam} / {requested produks}"
+      // Handle empty kelas
+      const kelasPart = peminjamData.kelas ? ` - ${peminjamData.kelas}` : "";
+      const keterangan = `Peminjaman baru : ${peminjamData.nama}${kelasPart} - ${peminjamData.nomor_induk} / ${productDescriptions.join(", ")}`;
+
       await logActivity(
         tx, // Pass transaction client
-        "Pengajuan, Barang",
-        `Pengajuan baru: ${kode_resi} - ${items.length} item`,
+        "Tambah,Peminjaman",
+        keterangan,
+        null, // id_admin (not applicable for user action)
+        id_peminjam // id_peminjam
       );
 
       return newPengajuan;

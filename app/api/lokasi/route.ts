@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@lib/prisma";
 import { z } from "zod";
 import { logActivity } from "@/lib/activity";
+import { getCurrentSession } from "@/lib/auth";
 
 const lokasiSchema = z.object({
     // Enforce limits: VARCHAR 30, 50
@@ -42,11 +43,14 @@ export async function POST(request: Request) {
             },
         });
 
+        const session = await getCurrentSession();
+
         // Log Activity
         await logActivity(
             prisma,
             "Tambah, Lokasi",
             `Lokasi baru: ${nama_ruang}`,
+            session?.id_admin
         );
 
         return NextResponse.json(lokasi, { status: 201 });

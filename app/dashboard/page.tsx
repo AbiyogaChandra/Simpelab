@@ -39,15 +39,16 @@ export default function DashboardPage() {
           totalStok
         });
 
-        // Recent Products (Last 5)
-        const sortedProducts = [...products].sort((a: any, b: any) => b.id - a.id).slice(0, 5);
+        // Recent Products (Last 3)
+        const sortedProducts = [...products].sort((a: any, b: any) => b.id - a.id).slice(0, 3);
         setRecentProducts(sortedProducts);
 
         // Fetch Activities (Aktivitas)
         const actRes = await fetch('/api/aktivitas');
         const activities = await actRes.json();
 
-        setRecentActivities(activities);
+        // Limit to 3 recent activities
+        setRecentActivities(activities.slice(0, 3));
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       } finally {

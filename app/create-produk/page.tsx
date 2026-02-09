@@ -1,10 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Sidebar from '@/components/Sidebar';
 
-export default function CreateProdukPage() {
+function CreateProdukContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const id = searchParams.get('id');
+  const isEditing = !!id;
+
   const [formData, setFormData] = useState({
     kategoriProduk: '',
     namaProduk: '',
@@ -13,6 +19,41 @@ export default function CreateProdukPage() {
     tipeModel: '',
     spesifikasi: '',
   });
+
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (isEditing) {
+      const fetchProduk = async () => {
+        try {
+          // Fetch all products to find the one we need (simpler given current API structure)
+          // Ideally API should support GET /api/produk?id=...
+          // But our GET /api/produk returns list. Let's filter client side or update API later if needed.
+          // UPDATE: Actually let's just fetch the list and find it, or we could ask to update GET to support ID.
+          // For now, let's just fetch all and filter.
+          const response = await fetch('/api/produk');
+          if (response.ok) {
+            const data = await response.json();
+            const produk = data.find((p: any) => p.id === parseInt(id));
+            if (produk) {
+              setFormData({
+                kategoriProduk: produk.kategori === 'ASET' ? 'aset' : 'hp',
+                namaProduk: produk.nama,
+                kodeProduk: produk.kode,
+                merk: produk.merk,
+                tipeModel: produk.model,
+                spesifikasi: produk.spesifikasi,
+              });
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching product:", error);
+        }
+      };
+      fetchProduk();
+    }
+  }, [isEditing, id]);
+
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     setFormData({
@@ -23,15 +64,18 @@ export default function CreateProdukPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsLoading(true);
 
     if (!formData.kategoriProduk) {
       alert('Mohon pilih kategori produk');
+      setIsLoading(false);
       return;
     }
 
     // Validate Kode Produk (Alphanumeric only)
     if (!/^[a-zA-Z0-9]+$/.test(formData.kodeProduk)) {
       alert('Kode Produk hanya boleh berisi huruf dan angka (tanpa spasi atau karakter spesial)');
+      setIsLoading(false);
       return;
     }
 
@@ -43,12 +87,15 @@ export default function CreateProdukPage() {
       merk: formData.merk,
       model: formData.tipeModel,
       spesifikasi: formData.spesifikasi,
-      kuantitas: 0 // Default per schema/logic
+      // quantity is handled by backend logic or existing data
     };
 
     try {
-      const response = await fetch('/api/produk', {
-        method: 'POST',
+      const url = isEditing ? `/api/produk?id=${id}` : '/api/produk';
+      const method = isEditing ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method: method,
         headers: {
           'Content-Type': 'application/json',
         },
@@ -57,14 +104,27 @@ export default function CreateProdukPage() {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create product');
+        // Handle unique constraint error
+        if (response.status === 409) {
+             alert(errorData.error || 'Kode produk sudah digunakan. Mohon gunakan kode lain.');
+             setIsLoading(false);
+             return;
+        }
+        throw new Error(errorData.error || `Failed to ${isEditing ? 'update' : 'create'} product`);
       }
 
-      alert('Produk berhasil dibuat!');
-      handleReset();
+      alert(`Produk berhasil ${isEditing ? 'diperbarui' : 'dibuat'}!`);
+      
+      if (isEditing) {
+        router.push('/data-inventaris');
+      } else {
+        handleReset();
+      }
     } catch (error) {
-      console.error('Error creating product:', error);
-      alert('Gagal membuat produk. Silakan coba lagi.');
+      console.error(`Error ${isEditing ? 'updating' : 'creating'} product:`, error);
+      alert(`Gagal ${isEditing ? 'memperbarui' : 'membuat'} produk. Silakan coba lagi.`);
+    } finally {
+        setIsLoading(false);
     }
   };
 
@@ -101,7 +161,7 @@ export default function CreateProdukPage() {
           fontWeight: 700,
           marginBottom: '8px'
         }}>
-          Create Produk
+          {isEditing ? 'Ubah Produk' : 'Buat Produk'}
         </h1>
         <p style={{
           color: '#666666',
@@ -109,7 +169,7 @@ export default function CreateProdukPage() {
           fontWeight: 400,
           marginBottom: '32px'
         }}>
-          Tambahkan produk master baru ke inventaris
+          {isEditing ? 'Perbarui data produk master' : 'Tambahkan produk master baru ke inventaris'}
         </p>
 
         {/* Form Card */}
@@ -399,6 +459,7 @@ export default function CreateProdukPage() {
               {/* Simpan Produk Button */}
               <button
                 type="submit"
+                disabled={isLoading}
                 style={{
                   padding: '12px 24px',
                   border: 'none',
@@ -407,18 +468,19 @@ export default function CreateProdukPage() {
                   color: '#FFFFFF',
                   fontSize: '14px',
                   fontWeight: 600,
-                  cursor: 'pointer',
+                  cursor: isLoading ? 'not-allowed' : 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
-                  fontFamily: 'inherit'
+                  fontFamily: 'inherit',
+                   opacity: isLoading ? 0.7 : 1
                 }}
               >
                 <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
                   <rect x="4" y="4" width="8" height="8" rx="1" stroke="white" strokeWidth="1.5" />
                   <path d="M6 8H10" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
                 </svg>
-                Simpan Produk
+                {isLoading ? 'Menyimpan...' : (isEditing ? 'Simpan Perubahan' : 'Simpan Produk')}
               </button>
             </div>
           </form>
@@ -426,4 +488,12 @@ export default function CreateProdukPage() {
       </div>
     </div>
   );
+}
+
+export default function CreateProdukPage() {
+    return (
+        <Suspense fallback={<div>Loading...</div>}>
+            <CreateProdukContent />
+        </Suspense>
+    );
 }

@@ -141,7 +141,7 @@ export default function BorrowingForm() {
                 id_produk: p.id,
                 kuantitas: p.quantity
             })),
-            alasan: formData.catatanBarang || 'Peminjaman Lab', // Use clarification as reason
+            catatan: formData.catatanBarang || 'Peminjaman Lab', // Use clarification as reason
             tanggal_pinjam: new Date(formData.tanggalPinjam).toISOString(),
             tanggal_kembali: formData.tanggalKembali ? new Date(formData.tanggalKembali).toISOString() : '',
         };

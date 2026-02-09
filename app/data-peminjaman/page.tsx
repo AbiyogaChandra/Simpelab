@@ -28,7 +28,7 @@ interface Pengajuan {
   id: string;
   status: StatusPengajuan;
   kode_resi?: string;
-  alasan?: string;
+  catatan?: string;
   tanggal_pinjam: string;
   tanggal_kembali: string | null;
   peminjam: Peminjam;
@@ -63,7 +63,7 @@ const DUMMY_PENGAJUAN: Pengajuan[] = [
     id: '1',
     status: 'KEMBALI',
     kode_resi: '21012026-001',
-    alasan: 'Type OTG, dipinjam untuk DDK',
+    catatan: 'Type OTG, dipinjam untuk DDK',
     tanggal_pinjam: '2026-01-21T08:00:00',
     tanggal_kembali: '2026-01-21T16:00:00',
     peminjam: {
@@ -80,7 +80,7 @@ const DUMMY_PENGAJUAN: Pengajuan[] = [
     id: '2',
     status: 'DIAJUKAN',
     kode_resi: '22012026-002',
-    alasan: 'Praktikum',
+    catatan: 'Praktikum',
     tanggal_pinjam: '2026-01-22T09:00:00',
     tanggal_kembali: null,
     peminjam: {
@@ -98,7 +98,7 @@ const DUMMY_PENGAJUAN: Pengajuan[] = [
     id: '3',
     status: 'DIPINJAM',
     kode_resi: '20012026-003',
-    alasan: 'Presentasi',
+    catatan: 'Presentasi',
     tanggal_pinjam: '2026-01-20T10:00:00',
     tanggal_kembali: null,
     peminjam: {
@@ -115,7 +115,7 @@ const DUMMY_PENGAJUAN: Pengajuan[] = [
     id: '4',
     status: 'TERLAMBAT',
     kode_resi: '15012026-004',
-    alasan: '-',
+    catatan: '-',
     tanggal_pinjam: '2026-01-15T08:00:00',
     tanggal_kembali: null,
     peminjam: {
