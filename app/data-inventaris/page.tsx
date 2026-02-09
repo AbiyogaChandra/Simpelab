@@ -176,129 +176,117 @@ export default function DataInventarisPage() {
         minHeight: '100vh'
       }}>
         {/* Page Header with Create Buttons */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          marginBottom: '32px',
-          flexWrap: 'wrap',
-          gap: '16px'
-        }}>
-          <div>
-            <h1 style={{
-              color: '#333333',
-              fontSize: '32px',
-              fontWeight: 700,
-              marginBottom: '8px',
-              margin: 0
-            }}>
-              Data Inventaris
-            </h1>
-            <p style={{
-              color: '#666666',
-              fontSize: '16px',
-              fontWeight: 400,
-              margin: 0
-            }}>
-              Kelola dan lihat semua data inventaris
-            </p>
-          </div>
-
-
+        <div>
+          <h1 style={{
+            color: '#333333',
+            fontSize: '32px',
+            fontWeight: 700,
+            marginBottom: '8px'
+          }}>
+            Data Inventaris
+          </h1>
+          <p style={{
+            color: '#666666',
+            fontSize: '16px',
+            fontWeight: 400,
+            marginBottom: '32px'
+          }}>
+            Kelola dan lihat semua data inventaris
+          </p>
         </div>
 
         {/* Controls Row */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
-             {/* Tabs */}
-             <div style={{ display: 'flex', gap: '12px' }}>
-                <button
-                  onClick={() => setActiveTab('produk')}
-                  style={{
-                    padding: '10px 24px',
-                    borderRadius: '30px',
-                    border: 'none',
-                    background: activeTab === 'produk' ? '#2F516A' : '#FFFFFF',
-                    color: activeTab === 'produk' ? '#FFFFFF' : '#666666',
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    boxShadow: activeTab === 'produk' ? '0 4px 6px -1px rgba(47, 81, 106, 0.2)' : 'none',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  <iconify-icon icon="gridicons:product" width="20" />
-                  Produk
-                </button>
+          {/* Tabs */}
+          <div style={{ display: 'flex', gap: '12px' }}>
+            <button
+              onClick={() => setActiveTab('produk')}
+              style={{
+                padding: '10px 24px',
+                borderRadius: '30px',
+                border: 'none',
+                background: activeTab === 'produk' ? '#2F516A' : '#FFFFFF',
+                color: activeTab === 'produk' ? '#FFFFFF' : '#666666',
+                fontSize: '14px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: activeTab === 'produk' ? '0 4px 6px -1px rgba(47, 81, 106, 0.2)' : 'none',
+                transition: 'all 0.2s'
+              }}
+            >
+              <iconify-icon icon="gridicons:product" width="20" />
+              Produk
+            </button>
 
-                <button
-                  onClick={() => setActiveTab('barang')}
-                  style={{
-                    padding: '10px 24px',
-                    borderRadius: '30px',
-                    border: 'none',
-                    background: activeTab === 'barang' ? '#2F516A' : '#FFFFFF',
-                    color: activeTab === 'barang' ? '#FFFFFF' : '#666666',
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    boxShadow: activeTab === 'barang' ? '0 4px 6px -1px rgba(47, 81, 106, 0.2)' : 'none',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  <iconify-icon icon="ep:goods-filled" width="20" />
-                  Detail Produk
-                </button>
-             </div>
+            <button
+              onClick={() => setActiveTab('barang')}
+              style={{
+                padding: '10px 24px',
+                borderRadius: '30px',
+                border: 'none',
+                background: activeTab === 'barang' ? '#2F516A' : '#FFFFFF',
+                color: activeTab === 'barang' ? '#FFFFFF' : '#666666',
+                fontSize: '14px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                boxShadow: activeTab === 'barang' ? '0 4px 6px -1px rgba(47, 81, 106, 0.2)' : 'none',
+                transition: 'all 0.2s'
+              }}
+            >
+              <iconify-icon icon="ep:goods-filled" width="20" />
+              Detail Produk
+            </button>
+          </div>
 
-             {/* Actions */}
-             <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                <Link
-                  href="/create-produk"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '10px 20px',
-                    background: '#FFFFFF',
-                    color: '#2F516A',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    textDecoration: 'none',
-                    border: '1px solid #E0E0E0',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  <iconify-icon icon="lucide:plus" width="16" />
-                  Buat Produk
-                </Link>
-                <Link
-                  href="/create-detail-produk"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    padding: '10px 20px',
-                    background: '#FFFFFF',
-                    color: '#2F516A',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    textDecoration: 'none',
-                    border: '1px solid #E0E0E0',
-                    transition: 'all 0.2s'
-                  }}
-                >
-                  <iconify-icon icon="lucide:plus" width="16" />
-                  Buat Detail Produk
-                </Link>
-             </div>
+          {/* Actions */}
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <Link
+              href="/create-produk"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 20px',
+                background: '#FFFFFF',
+                color: '#2F516A',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: 600,
+                textDecoration: 'none',
+                border: '1px solid #E0E0E0',
+                transition: 'all 0.2s'
+              }}
+            >
+              <iconify-icon icon="ic:round-plus" width="16" />
+              Buat Produk
+            </Link>
+            <Link
+              href="/create-detail-produk"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '10px 20px',
+                background: '#FFFFFF',
+                color: '#2F516A',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: 600,
+                textDecoration: 'none',
+                border: '1px solid #E0E0E0',
+                transition: 'all 0.2s'
+              }}
+            >
+              <iconify-icon icon="ic:round-plus" width="16" />
+              Buat Detail Produk
+            </Link>
+          </div>
         </div>
 
         {/* Filter Card Top */}
@@ -361,7 +349,7 @@ export default function DataInventarisPage() {
                   pointerEvents: 'none',
                   display: 'flex'
                 }}>
-                  <iconify-icon icon="lucide:chevron-down" style={{ color: '#666666' }} width="16" />
+                  <iconify-icon icon="icon-park-outline:down" style={{ color: '#666666' }} width="16" />
                 </div>
               </div>
             </div>
@@ -398,7 +386,7 @@ export default function DataInventarisPage() {
                   display: 'flex',
                   alignItems: 'center'
                 }}>
-                   <iconify-icon icon="lucide:search" style={{ color: '#666666' }} width="16" />
+                  <iconify-icon icon="iconamoon:search" style={{ color: '#666666' }} width="16" />
                 </div>
               </div>
             </div>
@@ -515,16 +503,16 @@ export default function DataInventarisPage() {
                           </td>
                           <td style={{ padding: '16px' }}>
                             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                              <button 
+                              <button
                                 onClick={() => handleEdit(p.id, 'produk')}
-                                style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#1E1E1E' }} 
+                                style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#1E1E1E' }}
                                 title="Edit"
                               >
                                 <iconify-icon icon="material-symbols:edit-outline-rounded" width="18" height="18"></iconify-icon>
                               </button>
-                              <button 
+                              <button
                                 onClick={() => handleDelete(p.id, 'produk')}
-                                style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#E37158' }} 
+                                style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#E37158' }}
                                 title="Delete"
                               >
                                 <iconify-icon icon="fluent:delete-12-regular" width="18" height="18"></iconify-icon>
@@ -539,7 +527,19 @@ export default function DataInventarisPage() {
                       return (
                         <tr key={d.id} style={{ borderBottom: '1px solid #F0F0F0' }}>
                           <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{globalIndex}</td>
-                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{(d.produk?.kategori === 'ASET' ? 'Aset' : d.produk?.kategori === 'HP' ? 'Habis Pakai' : d.produk?.kategori) || '-'}</td>
+                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>
+                            <span style={{
+                              display: 'inline-block',
+                              padding: '4px 12px',
+                              borderRadius: '12px',
+                              background: '#E3F2FD',
+                              color: '#333333',
+                              fontSize: '12px',
+                              fontWeight: 500
+                            }}>
+                              {d.produk?.kategori === 'ASET' ? 'Aset' : d.produk?.kategori === 'HP' ? 'Habis Pakai' : d.produk?.kategori}
+                            </span>
+                          </td>
                           <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{d.produk?.nama || '-'}</td>
                           <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{d.kode_seri || '-'}</td>
                           {/* <td style={{ padding: '16px' }}>
@@ -568,23 +568,23 @@ export default function DataInventarisPage() {
                           <td style={{ padding: '16px' }}>
                             {/* Actions */}
                             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                              <button 
+                              <button
                                 onClick={() => handleView(d)}
-                                style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#1E1E1E' }} 
+                                style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#1E1E1E' }}
                                 title="View"
                               >
                                 <iconify-icon icon="lsicon:view-outline" width="18" height="18"></iconify-icon>
                               </button>
-                              <button 
+                              <button
                                 onClick={() => handleEdit(d.id, 'detail')}
-                                style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#1E1E1E' }} 
+                                style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#1E1E1E' }}
                                 title="Edit"
                               >
                                 <iconify-icon icon="material-symbols:edit-outline-rounded" width="18" height="18"></iconify-icon>
                               </button>
-                              <button 
+                              <button
                                 onClick={() => handleDelete(d.id, 'detail')}
-                                style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#E37158' }} 
+                                style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#E37158' }}
                                 title="Delete"
                               >
                                 <iconify-icon icon="fluent:delete-12-regular" width="18" height="18"></iconify-icon>
@@ -608,75 +608,75 @@ export default function DataInventarisPage() {
               alignItems: 'center'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <select 
+                <select
                   value={itemsPerPage}
                   onChange={(e) => setItemsPerPage(Number(e.target.value))}
                   style={{
-                  padding: '6px 12px',
-                  color: '#333333',
-                  border: '1px solid #E0E0E0',
-                  borderRadius: '6px',
-                  fontSize: '14px',
-                  fontFamily: 'inherit',
-                  cursor: 'pointer'
-                }}>
+                    padding: '6px 12px',
+                    color: '#333333',
+                    border: '1px solid #E0E0E0',
+                    borderRadius: '6px',
+                    fontSize: '14px',
+                    fontFamily: 'inherit',
+                    cursor: 'pointer'
+                  }}>
                   <option value="5">5</option>
                   <option value="10">10</option>
                   <option value="20">20</option>
                 </select>
                 <span style={{ color: '#666666', fontSize: '14px' }}>
-                    Results: {totalItems > 0 ? startIndex + 1 : 0}-{Math.min(endIndex, totalItems)} of {totalItems}
+                  Results: {totalItems > 0 ? startIndex + 1 : 0}-{Math.min(endIndex, totalItems)} of {totalItems}
                 </span>
               </div>
               <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-                <button 
+                <button
                   onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
                   style={{
-                  padding: '8px 16px',
-                  border: '1px solid #E0E0E0',
-                  borderRadius: '6px',
-                  background: currentPage === 1 ? '#F5F5F5' : '#FFFFFF',
-                  color: currentPage === 1 ? '#999999' : '#666666',
-                  fontSize: '14px',
-                  cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
-                  fontFamily: 'inherit',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px'
-                }}>
-                   Previous
-                </button>
-                
-                <div style={{
-                    padding: '8px 12px',
-                    borderRadius: '6px',
-                    background: '#FFFFFF',
+                    padding: '8px 16px',
                     border: '1px solid #E0E0E0',
-                    color: '#333',
+                    borderRadius: '6px',
+                    background: currentPage === 1 ? '#F5F5F5' : '#FFFFFF',
+                    color: currentPage === 1 ? '#999999' : '#666666',
                     fontSize: '14px',
-                    fontWeight: 500
+                    cursor: currentPage === 1 ? 'not-allowed' : 'pointer',
+                    fontFamily: 'inherit',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}>
+                  Previous
+                </button>
+
+                <div style={{
+                  padding: '8px 12px',
+                  borderRadius: '6px',
+                  background: '#FFFFFF',
+                  border: '1px solid #E0E0E0',
+                  color: '#333',
+                  fontSize: '14px',
+                  fontWeight: 500
                 }}>
-                    {currentPage}
+                  {currentPage}
                 </div>
 
-                <button 
+                <button
                   onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                   disabled={currentPage === totalPages || totalPages === 0}
                   style={{
-                  padding: '8px 16px',
-                  border: '1px solid #E0E0E0',
-                  borderRadius: '6px',
-                  background: (currentPage === totalPages || totalPages === 0) ? '#F5F5F5' : '#FFFFFF',
-                  color: (currentPage === totalPages || totalPages === 0) ? '#999999' : '#666666',
-                  fontSize: '14px',
-                  cursor: (currentPage === totalPages || totalPages === 0) ? 'not-allowed' : 'pointer',
-                  fontFamily: 'inherit',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px'
-                }}>
-                   Next
+                    padding: '8px 16px',
+                    border: '1px solid #E0E0E0',
+                    borderRadius: '6px',
+                    background: (currentPage === totalPages || totalPages === 0) ? '#F5F5F5' : '#FFFFFF',
+                    color: (currentPage === totalPages || totalPages === 0) ? '#999999' : '#666666',
+                    fontSize: '14px',
+                    cursor: (currentPage === totalPages || totalPages === 0) ? 'not-allowed' : 'pointer',
+                    fontFamily: 'inherit',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}>
+                  Next
                 </button>
               </div>
             </div>
@@ -695,8 +695,8 @@ export default function DataInventarisPage() {
             minHeight: '400px'
           }}>
             {/* Box Icon */}
-            <div style={{ 
-              marginBottom: '24px', 
+            <div style={{
+              marginBottom: '24px',
               color: '#6D7D90'
             }}>
               <iconify-icon
@@ -729,119 +729,119 @@ export default function DataInventarisPage() {
         )}
       </div>
       {viewModalOpen && selectedDetail && (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(0,0,0,0.5)',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      zIndex: 1000
-    }} onClick={() => setViewModalOpen(false)}>
-      <div style={{
-        background: 'white',
-        padding: '32px',
-        borderRadius: '16px',
-        width: '700px',
-        maxWidth: '90%',
-        position: 'relative',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '24px'
-      }} onClick={e => e.stopPropagation()}>
-        
-        {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-              <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 700, color: '#1E1E1E' }}>Detail Produk</h2>
-              <p style={{ margin: 0, fontSize: '14px', color: '#666666' }}>{selectedDetail.produk.nama}</p>
-          </div>
-          <button onClick={() => setViewModalOpen(false)} style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}>
-             <iconify-icon icon="basil:cross-solid" width="24" height="24" style={{ color: '#666666' }}></iconify-icon>
-          </button>
-        </div>
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          zIndex: 1000
+        }} onClick={() => setViewModalOpen(false)}>
+          <div style={{
+            background: 'white',
+            padding: '32px',
+            borderRadius: '16px',
+            width: '700px',
+            maxWidth: '90%',
+            position: 'relative',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '24px'
+          }} onClick={e => e.stopPropagation()}>
 
-        {/* Content */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
-            {/* Left: QR Code */}
-            <div style={{ 
-                background: '#F9FAFB', 
-                padding: '16px', 
-                borderRadius: '12px', 
-                display: 'flex', 
-                flexDirection: 'column', 
-                alignItems: 'center', 
+            {/* Header */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 700, color: '#1E1E1E' }}>Detail Produk</h2>
+                <p style={{ margin: 0, fontSize: '14px', color: '#666666' }}>{selectedDetail.produk.nama}</p>
+              </div>
+              <button onClick={() => setViewModalOpen(false)} style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}>
+                <iconify-icon icon="basil:cross-solid" width="24" height="24" style={{ color: '#666666' }}></iconify-icon>
+              </button>
+            </div>
+
+            {/* Content */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+              {/* Left: QR Code */}
+              <div style={{
+                background: '#F9FAFB',
+                padding: '16px',
+                borderRadius: '12px',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
                 justifyContent: 'center',
-                 border: '1px dashed #E0E0E0'
-            }}>
-                 {selectedDetail.kode_scan ? (
-                     <>
-                        <div style={{ background: 'white', padding: '16px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
-                            <QRCode
-                                value={selectedDetail.kode_scan}
-                                size={120}
-                                style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                                viewBox={`0 0 256 256`}
-                            />
-                        </div>
-                        <p style={{ marginTop: '12px', fontSize: '12px', fontWeight: 500, color: '#333' }}>{selectedDetail.kode_scan}</p>
-                     </>
-                 ) : (
-                     <>
-                        <div style={{ background: 'white', padding: '14px', borderRadius: '12px', boxShadow: 'none', border: '2px dashed #e0e0e0' }}>
-                            <QRCode
-                                value="PLACEHOLDER-QR-CODE"
-                                size={120}
-                                fgColor="#e0e0e0"
-                                style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                                viewBox={`0 0 256 256`}
-                            />
-                        </div>
-                        <div style={{ width: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999', marginTop: '12px', fontSize: '12px' }}>No QR</div>
-                     </>
-                 )}
-            </div>
-
-            {/* Right: Details */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div>
-                    <label style={{ display: 'block', fontSize: '12px', color: '#666', marginBottom: '4px' }}>Kode Seri</label>
-                    <div style={{ fontSize: '14px', fontWeight: 500, color: '#333' }}>{selectedDetail.kode_seri || '-'}</div>
-                </div>
-                <div>
-                    <label style={{ display: 'block', fontSize: '12px', color: '#666', marginBottom: '4px' }}>Kondisi</label>
-                    <div style={{ fontSize: '14px', fontWeight: 500, color: '#333' }}>{selectedDetail.kondisi}</div>
-                </div>
-                <div>
-                    <label style={{ display: 'block', fontSize: '12px', color: '#666', marginBottom: '4px' }}>Lokasi</label>
-                    <div style={{ fontSize: '14px', fontWeight: 500, color: '#333' }}>
-                        {selectedDetail.lokasi.nama_ruang}
-                        <br/>
-                        <span style={{ fontSize: '12px', color: '#666' }}>{selectedDetail.lokasi.keterangan}</span>
+                border: '1px dashed #E0E0E0'
+              }}>
+                {selectedDetail.kode_scan ? (
+                  <>
+                    <div style={{ background: 'white', padding: '16px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
+                      <QRCode
+                        value={selectedDetail.kode_scan}
+                        size={120}
+                        style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                        viewBox={`0 0 256 256`}
+                      />
                     </div>
+                    <p style={{ marginTop: '12px', fontSize: '12px', fontWeight: 500, color: '#333' }}>{selectedDetail.kode_scan}</p>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ background: 'white', padding: '14px', borderRadius: '12px', boxShadow: 'none', border: '2px dashed #e0e0e0' }}>
+                      <QRCode
+                        value="PLACEHOLDER-QR-CODE"
+                        size={120}
+                        fgColor="#e0e0e0"
+                        style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                        viewBox={`0 0 256 256`}
+                      />
+                    </div>
+                    <div style={{ width: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999', marginTop: '12px', fontSize: '12px' }}>No QR</div>
+                  </>
+                )}
+              </div>
+
+              {/* Right: Details */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', color: '#666', marginBottom: '4px' }}>Kode Seri</label>
+                  <div style={{ fontSize: '14px', fontWeight: 500, color: '#333' }}>{selectedDetail.kode_seri || '-'}</div>
                 </div>
                 <div>
-                    <label style={{ display: 'block', fontSize: '12px', color: '#666', marginBottom: '4px' }}>Status</label>
-                     <span style={{
-                        display: 'inline-block',
-                        padding: '4px 10px',
-                        borderRadius: '12px',
-                        background: selectedDetail.status === 'TERSEDIA' ? '#D1FAE5' : '#FEE2E2',
-                        color: selectedDetail.status === 'TERSEDIA' ? '#065F46' : '#991B1B',
-                        fontSize: '12px',
-                        fontWeight: 500
-                      }}>
-                        {selectedDetail.status}
-                      </span>
+                  <label style={{ display: 'block', fontSize: '12px', color: '#666', marginBottom: '4px' }}>Kondisi</label>
+                  <div style={{ fontSize: '14px', fontWeight: 500, color: '#333' }}>{selectedDetail.kondisi}</div>
                 </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', color: '#666', marginBottom: '4px' }}>Lokasi</label>
+                  <div style={{ fontSize: '14px', fontWeight: 500, color: '#333' }}>
+                    {selectedDetail.lokasi.nama_ruang}
+                    <br />
+                    <span style={{ fontSize: '12px', color: '#666' }}>{selectedDetail.lokasi.keterangan}</span>
+                  </div>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', color: '#666', marginBottom: '4px' }}>Status</label>
+                  <span style={{
+                    display: 'inline-block',
+                    padding: '4px 10px',
+                    borderRadius: '12px',
+                    background: selectedDetail.status === 'TERSEDIA' ? '#D1FAE5' : '#FEE2E2',
+                    color: selectedDetail.status === 'TERSEDIA' ? '#065F46' : '#991B1B',
+                    fontSize: '12px',
+                    fontWeight: 500
+                  }}>
+                    {selectedDetail.status}
+                  </span>
+                </div>
+              </div>
             </div>
+          </div>
         </div>
-      </div>
-    </div>
-  )}
+      )}
     </div>
   );
 }
