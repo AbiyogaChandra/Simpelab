@@ -577,7 +577,11 @@ function CreateDetailProdukContent() {
                   </div>
 
                   {/* Lokasi Autocomplete (Wide) */}
-                  <div style={{ flex: 1 }}>
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    flex: 1
+                  }}>
                     <label style={{
                       display: 'block',
                       color: '#333333',
@@ -587,9 +591,14 @@ function CreateDetailProdukContent() {
                     }}>
                       Lokasi
                     </label>
-                    <div style={{ position: 'relative' }}>
+                    <div style={{
+                      position: 'relative',
+                      display: 'flex',
+                      flex: 1
+                    }}>
                       <div style={{
                         display: 'flex',
+                        flex: 1,
                         alignItems: 'center',
                         border: '1px solid #E0E0E0',
                         borderRadius: '8px',
@@ -810,7 +819,7 @@ function CreateDetailProdukContent() {
                         viewBox={`0 0 120 120`}
                       />
                     </div>
-                    <p style={{
+                    {/* <p style={{
                       marginTop: '16px',
                       color: '#333333',
                       fontSize: '14px',
@@ -818,11 +827,11 @@ function CreateDetailProdukContent() {
                       textAlign: 'center'
                     }}>
                       {getQRValue()}
-                    </p>
+                    </p> */}
                     <p style={{
-                      color: '#666666',
-                      fontSize: '12px',
-                      marginTop: '4px'
+                      marginTop: '16px',
+                      color: '#A7A7A7',
+                      fontSize: '12px'
                     }}>
                       Simpan kode ini untuk ditempel pada barang
                     </p>
@@ -846,7 +855,7 @@ function CreateDetailProdukContent() {
               </div>
             </div>
 
-
+            <hr style={{ margin: '8px 0px' }} />
 
             {/* Actions */}
             <div style={{ display: 'flex', gap: '16px', marginTop: '32px' }}>
