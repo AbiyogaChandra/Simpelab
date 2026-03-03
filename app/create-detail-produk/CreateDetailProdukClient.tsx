@@ -192,7 +192,7 @@ function CreateDetailProdukContent() {
 
       while (!isUnique && attempts < 10) {
         const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        candidate = Array.from({ length: 32 }, () => // Reduced to 8 for simple serials, or keep 32 if preferred
+        candidate = Array.from({ length: 32 }, () =>
           chars.charAt(Math.floor(Math.random() * chars.length))
         ).join('');
 
@@ -851,40 +851,54 @@ function CreateDetailProdukContent() {
             {/* Actions */}
             <div style={{ display: 'flex', gap: '16px', marginTop: '32px' }}>
               <button
-                type="button"
-                onClick={handleReset}
-                style={{
-                  flex: 1,
-                  padding: '12px',
-                  background: '#FFFFFF',
-                  border: '1px solid #E0E0E0',
-                  borderRadius: '12px',
-                  color: '#666666',
-                  fontSize: '16px',
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s'
-                }}
-              >
-                Reset
-              </button>
-              <button
                 type="submit"
                 style={{
-                  flex: 1,
-                  padding: '12px',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '16px',
                   background: '#2F516A',
                   border: 'none',
-                  borderRadius: '12px',
+                  borderRadius: '8px',
                   color: '#FFFFFF',
                   fontSize: '16px',
-                  fontWeight: 600,
+                  fontWeight: 400,
                   cursor: 'pointer',
                   transition: 'background 0.2s',
                   boxShadow: '0 4px 6px rgba(47, 81, 106, 0.2)'
                 }}
               >
-                {isEditing ? 'Simpan Perubahan' : 'Tambahkan Barang'}
+                <iconify-icon
+                  icon="material-symbols:save-rounded"
+                  height="20"
+                />
+                {isEditing ? 'Simpan Perubahan' : 'Tambahkan Detail Produk'}
+              </button>
+              <button
+                type="button"
+                onClick={handleReset}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '16px',
+                  background: '#FFFFFF',
+                  border: '1px solid #2F516A',
+                  borderRadius: '12px',
+                  color: '#2F516A',
+                  fontSize: '16px',
+                  fontWeight: 400,
+                  cursor: 'pointer',
+                  transition: 'all 0.2s'
+                }}
+              >
+                <iconify-icon
+                  icon="ri:reset-left-line"
+                  height="20"
+                />
+                Reset Form
               </button>
             </div>
           </form>
