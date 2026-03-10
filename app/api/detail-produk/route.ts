@@ -19,6 +19,7 @@ export async function GET(request: Request) {
         const id_produkParam = searchParams.get('id_produk');
         const idParam = searchParams.get('id');
         const statusParam = searchParams.get('status');
+        const namaProdukParam = searchParams.get('nama_produk');
 
         const whereClause: any = {};
         if (id_produkParam) {
@@ -29,6 +30,11 @@ export async function GET(request: Request) {
         }
         if (statusParam) {
             whereClause.status = statusParam;
+        }
+        if (namaProdukParam) {
+            whereClause.produk = {
+                nama: { contains: namaProdukParam } // Example: "Laptop" matches "Laptop Lenovo", "Laptop Asus", etc.
+            };
         }
 
         const detailProduk = await prisma.detailProduk.findMany({
