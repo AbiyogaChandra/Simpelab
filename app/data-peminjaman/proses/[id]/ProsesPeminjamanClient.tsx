@@ -79,7 +79,7 @@ export default function ProsesPeminjamanPage() {
                         // Fetch available serials for each product
                         loadedItems.forEach((item: any) => {
                             if (item.productId) {
-                                fetchAvailableSerials(item.productId);
+                                fetchAvailableSerials(item.productId, item.namaProduk);
                             }
                         });
                     }
@@ -97,9 +97,11 @@ export default function ProsesPeminjamanPage() {
         fetchData();
     }, [id]);
 
-    const fetchAvailableSerials = async (productId: number) => {
+    const fetchAvailableSerials = async (productId: number, productName: string) => {
         try {
-            const res = await fetch(`/api/detail-produk?id_produk=${productId}&status=TERSEDIA`);
+            // First word of product name to get alternatives (e.g. "Laptop Asus" -> "Laptop")
+            const baseType = productName.split(' ')[0];
+            const res = await fetch(`/api/detail-produk?nama_produk=${encodeURIComponent(baseType)}&status=TERSEDIA`);
             if (res.ok) {
                 const data = await res.json();
                 setAvailableSerials(prev => ({
@@ -486,7 +488,23 @@ export default function ProsesPeminjamanPage() {
                                             <input
                                                 type="text"
                                                 value={serialInputs[item.id] || ''}
-                                                onChange={(e) => setSerialInputs(prev => ({ ...prev, [item.id]: e.target.value }))}
+                                                onChange={(e) => {
+                                                    const val = e.target.value;
+                                                    setSerialInputs(prev => ({ ...prev, [item.id]: val }));
+
+                                                    // Auto-select if there is an exact match for the serial
+                                                    if (item.productId && availableSerials[item.productId]) {
+                                                        const exactMatch = availableSerials[item.productId].find(s =>
+                                                            (s.kode_seri && s.kode_seri === val) ||
+                                                            (!s.kode_seri && s.id.toString() === val)
+                                                        );
+
+                                                        // Check if match exists and hasn't been selected yet
+                                                        if (exactMatch && !item.selectedSerials.some(selected => selected.id === exactMatch.id)) {
+                                                            handleAddSerial(item.id, item.productId, val);
+                                                        }
+                                                    }
+                                                }}
                                                 onFocus={() => setActiveSerialInput(item.id)}
                                                 onBlur={() => setTimeout(() => setActiveSerialInput(null), 200)}
                                                 onKeyDown={(e) => {
