@@ -126,10 +126,22 @@ export async function PUT(request: Request) {
 
                         // Update Status of DetailProduk if Peminjaman is DIPINJAM
                         if (status === 'DIPINJAM') {
-                            await tx.detailProduk.update({
+                            const updatedDetailProduk = await tx.detailProduk.update({
                                 where: { id: detail_produk_id },
-                                data: { status: 'DIPINJAM' }
+                                data: { status: 'DIPINJAM' },
+                                include: { produk: true }
                             });
+
+                            // Log Activity for Detail Produk change
+                            const session = await getCurrentSession();
+                            if (session) {
+                                await logActivity(
+                                    tx as any, // Need to cast or pass prisma to logActivity if no tx support, but logActivity uses passed client
+                                    "Ubah, Detail Produk, Peminjaman",
+                                    `Status Detail Produk ${updatedDetailProduk.produk.nama} (ID: ${updatedDetailProduk.id}) dipinjam oleh ${updatedPengajuan.peminjam.nama}`,
+                                    session.id_admin
+                                );
+                            }
                         }
                     }
                 }
@@ -172,27 +184,41 @@ export async function PUT(request: Request) {
 
                     if (lokasiId) {
                         // Update all related detail products
+                        const detailPengajuanIds = await tx.detailPengajuan.findMany({
+                            where: { id_pengajuan: id },
+                            select: { id: true }
+                        }).then(res => res.map(r => r.id));
+
                         const detailProdukPengajuan = await tx.detailProdukPengajuan.findMany({
-                            where: { id_detail_pengajuan: { in: await tx.detailPengajuan.findMany({ where: { id_pengajuan: id }, select: { id: true } }).then(res => res.map(r => r.id)) } }
+                            where: { id_detail_pengajuan: { in: detailPengajuanIds } }
                         });
 
                         for (const dpp of detailProdukPengajuan) {
-                            await tx.detailProduk.update({
+                            const updatedDetailProduk = await tx.detailProduk.update({
                                 where: { id: dpp.id_detail_produk },
                                 data: {
                                     status: 'TERSEDIA',
                                     kondisi: condition,
                                     id_lokasi: lokasiId
-                                }
+                                },
+                                include: { produk: true }
                             });
+
+                            // Log Activity for Detail Produk return
+                            const session = await getCurrentSession();
+                            if (session) {
+                                await logActivity(
+                                    tx as any,
+                                    "Ubah, Detail Produk",
+                                    `Detail Produk ${updatedDetailProduk.produk.nama} (ID: ${updatedDetailProduk.id}) dikembalikan oleh ${updatedPengajuan.peminjam.nama} dengan kondisi ${condition}`,
+                                    session.id_admin
+                                );
+                            }
                         }
                     }
                 }
             }
 
-            // Log Activity using 'result' (updatedPengajuan)
-            // (We log outside transaction or inside? Inside is safer for consistency, but logActivity uses prisma client. 
-            //  Ideally pass tx to logActivity if supported, or just log 'updatedPengajuan' details after tx success)
             return updatedPengajuan;
         });
 
