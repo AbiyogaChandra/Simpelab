@@ -23,16 +23,22 @@ npm ci
 4. Generate Prisma Client.
 
 ```bash
-npx prisma generate
+npx run db:generate
 ```
 
 5. Buat file database.
 
 ```bash
-npx prisma db push
+npx run db:push
 ```
 
-6. Start server.
+6. Seeding database.
+
+```bash
+npm run db:seed
+```
+
+7. Start server.
 
 ```bash
 npm run dev
@@ -44,4 +50,4 @@ pnpm dev
 bun dev
 ```
 
-7. Kunjungi [http://localhost:3000](http://localhost:3000) untuk melihat websitenya.
+8. Kunjungi [http://localhost:3000](http://localhost:3000) untuk melihat websitenya.
