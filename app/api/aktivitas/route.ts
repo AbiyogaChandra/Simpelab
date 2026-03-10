@@ -4,9 +4,28 @@ import { prisma } from "@lib/prisma";
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const tag = searchParams.get('tag');
+    const search = searchParams.get('search');
 
     try {
         const whereClause: any = {};
+
+        if (tag) {
+            whereClause.OR = [
+                { kategori: tag }, // Exact match
+                { kategori: { startsWith: `${tag},` } }, // First tag
+                { kategori: { endsWith: `, ${tag}` } }, // Last tag
+                { kategori: { contains: `, ${tag},` } }, // Middle tag
+            ];
+        }
+
+        if (search) {
+            whereClause.OR = [
+                { keterangan: { contains: search } },
+                { admin: { username: { contains: search } } },
+                { peminjam: { nama: { contains: search } } }
+            ];
+        }
+
         const page = parseInt(searchParams.get('page') || '1');
         const limit = parseInt(searchParams.get('limit') || '20');
         const skip = (page - 1) * limit;
@@ -37,7 +56,7 @@ export async function GET(request: Request) {
 
         const formattedAktivitas = aktivitas.map((item) => ({
             id: item.id,
-            tags: item.kategori.split(',').map(tag => tag.trim()), // "Tambah, Barang" -> ["Tambah", "Barang"]
+            tags: item.kategori.split(',').map(tag => tag.trim()), // "Buat, Detail Produk" -> ["Buat", "Produk"]
             message: item.keterangan,
             timestamp: new Date(item.waktu).toLocaleString('id-ID', {
                 day: '2-digit', month: 'short', year: 'numeric',
