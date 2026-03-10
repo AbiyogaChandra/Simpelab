@@ -50,4 +50,11 @@ pnpm dev
 bun dev
 ```
 
-8. Kunjungi [http://localhost:3000](http://localhost:3000) untuk melihat websitenya.
+8. Kunjungi [http://localhost:3000](http://localhost:3000) untuk melihat form peminjamannya.
+
+9. Kunjungi [http://localhost:3000/login](http://localhost:3000/login) untuk melihat sisi adminnya. Gunakan akun tersebut:
+
+```
+Username: admin
+Password: admin
+```
