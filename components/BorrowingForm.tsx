@@ -19,6 +19,7 @@ interface Peminjam {
   id: string;
   nama: string;
   nomor_induk: string;
+  kelas?: string;
 }
 
 export default function BorrowingForm() {
@@ -313,7 +314,12 @@ export default function BorrowingForm() {
         justifyContent: 'center'
       }}>
         {/* Header */}
-        <div style={{ marginBottom: '32px' }}>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '20px',
+          marginBottom: '32px'
+        }}>
           <h1 style={{
             fontSize: '32px',
             fontWeight: 700,
@@ -333,6 +339,26 @@ export default function BorrowingForm() {
           }}>
             Ajukan peminjaman alat lab dengan cepat dan terintegrasi dalam satu sistem
           </p>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '14px',
+            fontSize: '12px',
+            color: '#2F516A',
+            backgroundColor: 'rgba(108, 174, 222, 0.3)',
+            border: '1px solid #4A7E91',
+            borderRadius: '4px',
+            padding: '12px 10px',
+            margin: 0,
+            lineHeight: '1.5',
+            fontFamily: 'Outfit, sans-serif'
+          }}>
+            <iconify-icon
+              icon="fluent:warning-24-filled"
+              height="20"
+            />
+            Peminjaman barang membutuhkan jaminan berupa kartu pelajar, untuk Peminjam Guru diharapkan datang ke UPJ sesuai identitas
+          </div>
         </div>
 
         {/* Form */}
@@ -408,7 +434,7 @@ export default function BorrowingForm() {
                   className="w-full px-4 py-3 border rounded-lg focus:outline-none"
                   style={{
                     fontSize: '14px',
-                    color: formData.identitas ? '#000000' : '#AAAAAA',
+                    color: formData.identitas ? '#000000' : '#A7A7A7',
                     height: '48px',
                     paddingLeft: '40px',
                     borderColor: '#E0E0E0',
@@ -417,11 +443,12 @@ export default function BorrowingForm() {
                   }}
                   autoComplete="off"
                 />
-                <div className="absolute left-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M8 8C9.65685 8 11 6.65685 11 5C11 3.34315 9.65685 2 8 2C6.34315 2 5 3.34315 5 5C5 6.65685 6.34315 8 8 8Z" stroke="#666666" strokeWidth="1.5" />
-                    <path d="M2 14C2 11.7909 4.68629 10 8 10C11.3137 10 14 11.7909 14 14" stroke="#666666" strokeWidth="1.5" strokeLinecap="round" />
-                  </svg>
+                <div className="flex items-center absolute left-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                  <iconify-icon
+                    icon="majesticons:user"
+                    height="20"
+                    style={{ color: '#A7A7A7' }}
+                  />
                 </div>
 
                 {/* Dropdown */}
@@ -455,7 +482,7 @@ export default function BorrowingForm() {
                         onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#FFFFFF'}
                       >
                         <div style={{ fontWeight: 500 }}>{p.nama}</div>
-                        <div style={{ fontSize: '12px', color: '#666666' }}>{p.nomor_induk}</div>
+                        <div style={{ fontSize: '12px', color: '#666666' }}>{formData.kategori === 'guru' ? 'NIP ' : p.kelas + ' - '} {p.nomor_induk}</div>
                       </div>
                     ))}
                   </div>
@@ -488,9 +515,11 @@ export default function BorrowingForm() {
                         onClick={() => handleRemoveProduct(product.id)}
                         style={{ border: 'none', background: 'transparent', cursor: 'pointer' }}
                       >
-                        <svg width="18" height="18" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M2 4h12M5 4V3a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1m2 0v9a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V4h10zM6 7v4M10 7v4" stroke="#DC2626" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
+                        <iconify-icon
+                          icon="fluent:delete-12-regular"
+                          height="24"
+                          style={{ color: '#E37158' }}
+                        />
                       </button>
                     </div>
 
@@ -572,7 +601,7 @@ export default function BorrowingForm() {
           {/* Row 3: Catatan Barang */}
           <div>
             <label className="block mb-2.5" style={{ color: '#333333', fontSize: '14px', fontWeight: 600, marginBottom: '12px', display: 'block' }}>
-              Catatan Barang
+              Keperluan Barang
             </label>
             <textarea
               name="catatanBarang"

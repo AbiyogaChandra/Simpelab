@@ -83,6 +83,28 @@ function StrukContent() {
             </div>
           </div>
 
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '14px',
+            fontSize: '12px',
+            color: '#2F516A',
+            backgroundColor: 'rgba(108, 174, 222, 0.3)',
+            border: '1px solid #4A7E91',
+            borderRadius: '4px',
+            padding: '12px 10px',
+            margin: 0,
+            lineHeight: '1.5',
+            fontFamily: 'Outfit, sans-serif',
+            marginBottom: '24px'
+          }}>
+            <iconify-icon
+              icon="fluent:warning-24-filled"
+              height="20"
+            />
+            Peminjaman barang membutuhkan jaminan berupa kartu pelajar, untuk Peminjam Guru diharapkan datang ke UPJ sesuai identitas
+          </div>
+
           {/* Nomor Resi Section - Nested Box */}
           <div style={{
             background: '#F5F5F5',
