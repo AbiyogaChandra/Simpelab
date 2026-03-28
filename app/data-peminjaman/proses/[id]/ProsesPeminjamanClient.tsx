@@ -41,10 +41,45 @@ export default function ProsesPeminjamanPage() {
 
     // Available serials cache: productId -> list of DetailProduk
     const [availableSerials, setAvailableSerials] = useState<Record<number, any[]>>({});
-    // Input state for serial number per item: itemId -> current input value
+    // Input state for serial number per item slot: `${itemId}-${slotIndex}` -> current input value
     const [serialInputs, setSerialInputs] = useState<Record<string, string>>({});
-    // State for active dropdown
     const [activeSerialInput, setActiveSerialInput] = useState<string | null>(null);
+    const [activeItemId, setActiveItemId] = useState<string | null>(null);
+
+    // Initializer
+    useEffect(() => {
+        if (items.length > 0 && !activeItemId) {
+            setActiveItemId(items[0].id);
+        }
+    }, [items.length]);
+
+    // Barcode Auto-Focus System & Cascade Jumper
+    useEffect(() => {
+        if (!activeItemId) return;
+        const currentItem = items.find(i => i.id === activeItemId);
+        if (!currentItem) return;
+
+        const focusTimeout = setTimeout(() => {
+            if (currentItem.selectedSerials.length >= currentItem.kuantitas) {
+                // Item is physically full, hunt for next incomplete item
+                const nextIncomplete = items.find(i => i.selectedSerials.length < i.kuantitas);
+                if (nextIncomplete && nextIncomplete.id !== activeItemId) {
+                    setActiveItemId(nextIncomplete.id);
+                }
+            } else {
+                // Only steal focus automatically if the user isn't already locally focused
+                const currentFocus = document.activeElement;
+                const isFocusedOnCurrentItem = currentFocus?.id?.startsWith(`serial-input-${currentItem.id}`);
+
+                if (!isFocusedOnCurrentItem) {
+                    const activeEl = document.getElementById(`serial-input-${currentItem.id}-${currentItem.selectedSerials.length}`);
+                    if (activeEl) activeEl.focus();
+                }
+            }
+        }, 50);
+
+        return () => clearTimeout(focusTimeout);
+    }, [items, activeItemId]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -118,12 +153,15 @@ export default function ProsesPeminjamanPage() {
         const inputVal = specificSerialCode || serialInputs[itemId];
         if (!inputVal) return;
 
-        // Find the serial in available list
+        // Find the serial in available list with resilient code combinations
         const available = availableSerials[productId] || [];
-        const found = available.find(s =>
-            (s.kode_seri && s.kode_seri === inputVal) ||
-            (!s.kode_seri && s.id.toString() === inputVal)
-        );
+        const found = available.find(s => {
+            const backupKode = s.produk?.kode ? `${s.produk.kode} - ${s.kode_seri || 'ID:' + s.id}` : null;
+            return (s.kode_scan && s.kode_scan === inputVal) ||
+                (s.kode_seri && s.kode_seri === inputVal) ||
+                (!s.kode_seri && s.id.toString() === inputVal) ||
+                (backupKode && backupKode === inputVal);
+        });
 
         if (!found) {
             alert('Serial Number tidak ditemukan atau tidak tersedia.');
@@ -133,24 +171,26 @@ export default function ProsesPeminjamanPage() {
         // Validate limits before updating
         const targetItem = items.find(i => i.id === itemId);
         if (!targetItem) return;
-        
+
         if (targetItem.selectedSerials.some(s => s.id === found.id)) return;
         if (targetItem.selectedSerials.length >= targetItem.kuantitas) {
             alert(`Maksimal ${targetItem.kuantitas} serial number.`);
             return;
         }
 
+        const displayKode = found.kode_scan || (found.produk?.kode ? `${found.produk.kode} - ${found.kode_seri || 'ID:' + found.id}` : found.kode_seri || found.id.toString());
+
         // Optimistic UI Update
         setItems(prev => prev.map(item => {
             if (item.id === itemId) {
                 return {
                     ...item,
-                    selectedSerials: [...item.selectedSerials, { id: found.id, kode: found.kode_seri || found.id.toString() }]
+                    selectedSerials: [...item.selectedSerials, { id: found.id, kode: displayKode }]
                 };
             }
             return item;
         }));
-        
+
         // Clear input and close dropdown
         setSerialInputs(prev => ({ ...prev, [itemId]: '' }));
         setActiveSerialInput(null);
@@ -165,7 +205,7 @@ export default function ProsesPeminjamanPage() {
                     detail_produk_id: found.id
                 })
             });
-            
+
             if (!res.ok) {
                 const err = await res.json();
                 alert(err.error || 'Gagal menyimpan draft ke database');
@@ -220,7 +260,7 @@ export default function ProsesPeminjamanPage() {
                 }
             }
         } catch (error) {
-           console.error('Draft DELETE fail:', error);
+            console.error('Draft DELETE fail:', error);
         }
     };
 
@@ -443,10 +483,10 @@ export default function ProsesPeminjamanPage() {
                                 Identitas
                             </label>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#333333', fontWeight: 600, fontSize: '16px' }}>
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path d="M20 21V19C20 17.9391 19.5786 16.9217 18.8284 16.1716C18.0783 15.4214 17.0609 15 16 15H8C6.93913 15 5.92172 15.4214 5.17157 16.1716C4.42143 16.9217 4 17.9391 4 19V21" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                    <path d="M12 11C14.2091 11 16 9.20914 16 7C16 4.79086 14.2091 3 12 3C9.79086 3 8 4.79086 8 7C8 9.20914 9.79086 11 12 11Z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                </svg>
+                                <iconify-icon
+                                    icon="majesticons:user"
+                                    height="20"
+                                />
                                 {identitas}
                             </div>
                         </div>
@@ -467,34 +507,57 @@ export default function ProsesPeminjamanPage() {
                         Barang
                     </h2>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '32px' }}>
-                        {items.map((item, index) => (
-                            <div
-                                key={item.id}
-                                style={{
-                                    border: '1px solid #E0E0E0',
-                                    borderRadius: '12px',
-                                    padding: '16px 24px',
-                                    background: '#FFFFFF',
-                                }}
-                            >
-                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px' }}>
-                                    <div style={{ fontWeight: 700, fontSize: '16px', color: '#333333' }}>
-                                        #{String(index + 1).padStart(2, '0')}
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '24px', marginBottom: '32px' }}>
+                        {items.map((item, index) => {
+                            const isActive = activeItemId === item.id;
+                            return (
+                                <div
+                                    key={item.id}
+                                    onClick={() => setActiveItemId(item.id)}
+                                    style={{
+                                        border: isActive ? '1px solid #2F516A' : '1px solid #E0E0E0',
+                                        borderRadius: '12px',
+                                        padding: '16px 24px',
+                                        background: '#FFFFFF',
+                                        transition: 'all 0.2s',
+                                        boxShadow: isActive ? '0 4px 12px rgba(47, 81, 106, 0.08)' : 'none',
+                                    }}
+                                >
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', alignItems: 'center' }}>
+                                        <div style={{ fontWeight: 700, fontSize: '16px', color: '#333333' }}>
+                                            #{String(index + 1).padStart(2, '0')}
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+                                            <button
+                                                type="button"
+                                                onClick={(e) => { e.stopPropagation(); setActiveItemId(item.id); }}
+                                                style={{
+                                                    padding: '6px 16px',
+                                                    background: isActive ? '#FFFFFF' : '#2F516A',
+                                                    color: isActive ? '#2F516A' : '#FFFFFF',
+                                                    border: '1px solid #2F516A',
+                                                    borderRadius: '4px',
+                                                    fontSize: '13px',
+                                                    fontWeight: 600,
+                                                    cursor: 'pointer'
+                                                }}
+                                            >
+                                                {isActive ? 'Dipilih' : 'Pilih'}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                title="Hapus Barang (Tidak Aktif)"
+                                                style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4, color: '#E37158' }}
+                                            >
+                                                <iconify-icon
+                                                    icon="fluent:delete-12-regular"
+                                                    height="28"
+                                                />
+                                            </button>
+                                        </div>
                                     </div>
-                                    <button
-                                        type="button"
-                                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}
-                                        title="Hapus Barang (Tidak Aktif)"
-                                    >
-                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2m3 0v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6h14z" stroke="#EF4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                        </svg>
-                                    </button>
-                                </div>
 
-                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '16px' }}>
-                                    <div>
+                                    <div style={{ marginBottom: '16px' }}>
                                         <label style={{ display: 'block', fontSize: '12px', color: '#666666', marginBottom: '8px' }}>Nama Produk</label>
                                         <div style={{
                                             padding: '12px 16px', background: '#FAFAFA', border: '1px solid #F3F4F6',
@@ -503,12 +566,14 @@ export default function ProsesPeminjamanPage() {
                                             {item.namaProduk}
                                         </div>
                                     </div>
-                                    <div>
+
+                                    <div style={{ marginBottom: '24px' }}>
                                         <label style={{ display: 'block', fontSize: '12px', color: '#666666', marginBottom: '8px' }}>Kuantitas</label>
                                         <input
                                             type="number"
                                             min="1"
                                             value={item.kuantitas}
+                                            onClick={(e) => e.stopPropagation()}
                                             onChange={(e) => handleQuantityChange(item.id, parseInt(e.target.value) || 1)}
                                             style={{
                                                 width: '100%',
@@ -517,146 +582,123 @@ export default function ProsesPeminjamanPage() {
                                             }}
                                         />
                                     </div>
-                                </div>
 
-                                {/* Serial Number Section */}
-                                <div>
-                                    <label style={{ display: 'block', fontSize: '12px', color: '#666666', marginBottom: '8px' }}>Nomor Seri</label>
+                                    {/* Iterative Configurable Slot List */}
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '12px', color: '#666666', marginBottom: '8px' }}>Nomor Seri</label>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                            {Array.from({ length: item.kuantitas }).map((_, slotIndex) => {
+                                                const filledSerial = item.selectedSerials[slotIndex];
 
-                                    {/* Selected Serials List */}
-                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
-                                        {item.selectedSerials.map(serial => (
-                                            <div key={serial.id} style={{
-                                                display: 'inline-flex', alignItems: 'center', gap: '8px',
-                                                padding: '6px 12px', background: '#EFF6FF', borderRadius: '6px',
-                                                border: '1px solid #BFDBFE', color: '#2F516A', fontSize: '13px', fontWeight: 500
-                                            }}>
-                                                {serial.kode}
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleRemoveSerial(item.id, serial.id)}
-                                                    style={{ border: 'none', background: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-                                                >
-                                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                                        <path d="M18 6L6 18M6 6l12 12" />
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-
-                                    {/* Add Serial Input */}
-                                    {item.selectedSerials.length < item.kuantitas && (
-                                        <div style={{ position: 'relative' }}>
-                                            <input
-                                                type="text"
-                                                value={serialInputs[item.id] || ''}
-                                                onChange={(e) => {
-                                                    const val = e.target.value;
-                                                    setSerialInputs(prev => ({ ...prev, [item.id]: val }));
-
-                                                    // Auto-select if there is an exact match for the serial
-                                                    if (item.productId && availableSerials[item.productId]) {
-                                                        const exactMatch = availableSerials[item.productId].find(s =>
-                                                            (s.kode_seri && s.kode_seri === val) ||
-                                                            (!s.kode_seri && s.id.toString() === val)
-                                                        );
-
-                                                        // Check if match exists and hasn't been selected yet
-                                                        if (exactMatch && !item.selectedSerials.some(selected => selected.id === exactMatch.id)) {
-                                                            handleAddSerial(item.id, item.productId, val);
-                                                        }
-                                                    }
-                                                }}
-                                                onFocus={() => setActiveSerialInput(item.id)}
-                                                onBlur={() => setTimeout(() => setActiveSerialInput(null), 200)}
-                                                onKeyDown={(e) => {
-                                                    if (e.key === 'Enter') {
-                                                        e.preventDefault();
-                                                        if (item.productId) {
-                                                            handleAddSerial(item.id, item.productId);
-                                                        }
-                                                    }
-                                                }}
-                                                placeholder={item.productId ? `Ketik nomor seri (tersedia: ${(availableSerials[item.productId] || []).length})` : "Loading..."}
-                                                style={{
-                                                    ...inputStyle,
-                                                    paddingRight: '40px',
-                                                    background: item.productId ? '#FFFFFF' : '#FAFAFA'
-                                                }}
-                                            />
-
-                                            {/* Check if active and has content */}
-                                            {activeSerialInput === item.id && item.productId && availableSerials[item.productId] && availableSerials[item.productId].length > 0 && (
-                                                <div style={{
-                                                    position: 'absolute',
-                                                    top: '100%',
-                                                    left: 0,
-                                                    right: 0,
-                                                    backgroundColor: '#FFFFFF',
-                                                    border: '1px solid #E0E0E0',
-                                                    borderRadius: '8px',
-                                                    marginTop: '4px',
-                                                    maxHeight: '200px',
-                                                    overflowY: 'auto',
-                                                    zIndex: 10,
-                                                    boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
-                                                }}>
-                                                    {availableSerials[item.productId]
-                                                        .filter(s => {
-                                                            const query = (serialInputs[item.id] || '').toLowerCase();
-                                                            const fullText = `${s.produk?.nama || ''} ${s.produk?.merk || ''} ${s.produk?.model || ''} ${s.produk?.spesifikasi || ''} ${s.kode_seri || ''}`.toLowerCase();
-                                                            const isSelected = item.selectedSerials.some(selected => selected.id === s.id);
-                                                            return fullText.includes(query) && !isSelected;
-                                                        })
-                                                        .map(s => (
-                                                            <div
-                                                                key={s.id}
-                                                                onClick={() => item.productId && handleAddSerial(item.id, item.productId, s.kode_seri || s.id.toString())}
-                                                                style={{
-                                                                    padding: '10px 16px',
-                                                                    fontSize: '14px',
-                                                                    color: '#333333',
-                                                                    cursor: 'pointer',
-                                                                    borderBottom: '1px solid #F5F5F5'
-                                                                }}
-                                                                onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F9FAFB'}
-                                                                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#FFFFFF'}
+                                                if (filledSerial) {
+                                                    return (
+                                                        <div key={slotIndex} style={{
+                                                            display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                                            padding: '12px 16px', background: '#FAFAFA', borderRadius: '8px',
+                                                            border: '1px solid #E0E0E0', color: '#333333', fontSize: '14px', fontWeight: 500
+                                                        }}>
+                                                            {filledSerial.kode}
+                                                            <button
+                                                                type="button"
+                                                                onClick={(e) => { e.stopPropagation(); handleRemoveSerial(item.id, filledSerial.id); }}
+                                                                style={{ border: 'none', background: 'none', cursor: 'pointer', color: '#9CA3AF' }}
                                                             >
-                                                                <div style={{ fontWeight: 500 }}>
-                                                                    {s.produk?.nama} {s.produk?.merk} {s.produk?.model}
-                                                                </div>
-                                                                <div style={{ fontSize: '12px', color: '#666666' }}>
-                                                                    {s.produk?.spesifikasi} - <strong>{s.kode_seri || `ID: ${s.id}`}</strong> ({s.kondisi})
-                                                                </div>
-                                                            </div>
-                                                        ))}
-                                                </div>
-                                            )}
+                                                                <iconify-icon
+                                                                    icon="basil:cross-solid"
+                                                                    height="24"
+                                                                />
+                                                            </button>
+                                                        </div>
+                                                    );
+                                                }
 
-                                            <button
-                                                type="button"
-                                                onClick={() => item.productId && handleAddSerial(item.id, item.productId)}
-                                                style={{
-                                                    position: 'absolute',
-                                                    right: '12px',
-                                                    top: '50%',
-                                                    transform: 'translateY(-50%)',
-                                                    cursor: 'pointer',
-                                                    color: '#2F516A',
-                                                    border: 'none',
-                                                    background: 'transparent',
-                                                    fontSize: '20px',
-                                                    fontWeight: 300,
-                                                }}
-                                            >
-                                                +
-                                            </button>
+                                                // Empty Input Slot
+                                                const inputKey = `${item.id}-${slotIndex}`;
+                                                return (
+                                                    <div key={slotIndex} style={{ position: 'relative' }}>
+                                                        <input
+                                                            id={`serial-input-${item.id}-${slotIndex}`}
+                                                            type="text"
+                                                            value={serialInputs[inputKey] || ''}
+                                                            onChange={(e) => setSerialInputs(prev => ({ ...prev, [inputKey]: e.target.value }))}
+                                                            onFocus={() => {
+                                                                setActiveSerialInput(inputKey);
+                                                                setActiveItemId(item.id);
+                                                            }}
+                                                            onBlur={() => setActiveSerialInput(null)}
+                                                            onKeyDown={(e) => {
+                                                                if (e.key === 'Enter') {
+                                                                    e.preventDefault();
+                                                                    if (item.productId && serialInputs[inputKey]) {
+                                                                        handleAddSerial(item.id, item.productId, serialInputs[inputKey]);
+                                                                        setSerialInputs(prev => ({ ...prev, [inputKey]: '' }));
+                                                                    }
+                                                                }
+                                                            }}
+                                                            placeholder="(Scan barang)"
+                                                            style={{
+                                                                ...inputStyle,
+                                                                background: '#FFFFFF',
+                                                                borderColor: (isActive && slotIndex === item.selectedSerials.length) ? '#2F516A' : '#E0E0E0',
+                                                                boxShadow: (isActive && slotIndex === item.selectedSerials.length) ? '0 0 0 2px rgba(47,81,106,0.1)' : 'none'
+                                                            }}
+                                                        />
+
+                                                        {/* Autocomplete Dropdown */}
+                                                        {activeSerialInput === inputKey && item.productId && availableSerials[item.productId] && availableSerials[item.productId].length > 0 && (
+                                                            <div
+                                                                onMouseDown={(e) => e.preventDefault()} // Prevent input natively blurring when clicking dropdown 
+                                                                style={{
+                                                                    position: 'absolute', top: '100%', left: 0, right: 0,
+                                                                    backgroundColor: '#FFFFFF', border: '1px solid #E0E0E0', borderRadius: '8px',
+                                                                    marginTop: '4px', maxHeight: '200px', overflowY: 'auto', zIndex: 10,
+                                                                    boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                                                                }}
+                                                            >
+                                                                {availableSerials[item.productId]
+                                                                    .filter(s => {
+                                                                        const query = (serialInputs[inputKey] || '').toLowerCase();
+                                                                        const backup = s.produk?.kode ? `${s.produk.kode} - ${s.kode_seri || 'ID:' + s.id}` : '';
+                                                                        const fullText = `${s.produk?.nama || ''} ${s.produk?.merk || ''} ${s.produk?.model || ''} ${s.produk?.spesifikasi || ''} ${s.kode_seri || ''} ${s.kode_scan || ''} ${backup}`.toLowerCase();
+                                                                        const isSelected = item.selectedSerials.some(selected => selected.id === s.id);
+                                                                        return fullText.includes(query) && !isSelected;
+                                                                    })
+                                                                    .map(s => (
+                                                                        <div
+                                                                            key={s.id}
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                if (item.productId) {
+                                                                                    const matchCode = s.kode_scan || s.kode_seri || (s.produk?.kode ? `${s.produk.kode} - ${s.kode_seri || 'ID:' + s.id}` : s.id.toString());
+                                                                                    handleAddSerial(item.id, item.productId, matchCode);
+                                                                                    setSerialInputs(prev => ({ ...prev, [inputKey]: '' }));
+                                                                                }
+                                                                            }}
+                                                                            style={{
+                                                                                padding: '10px 16px', fontSize: '14px', color: '#333333',
+                                                                                cursor: 'pointer', borderBottom: '1px solid #F5F5F5'
+                                                                            }}
+                                                                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#F9FAFB'}
+                                                                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#FFFFFF'}
+                                                                        >
+                                                                            <div style={{ fontWeight: 500 }}>
+                                                                                {s.produk?.nama} {s.produk?.merk} {s.produk?.model}
+                                                                            </div>
+                                                                            <div style={{ fontSize: '12px', color: '#666666' }}>
+                                                                                {s.produk?.spesifikasi} - <strong>{s.kode_scan || s.kode_seri || `ID: ${s.id}`}</strong> ({s.kondisi})
+                                                                            </div>
+                                                                        </div>
+                                                                    ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
                                         </div>
-                                    )}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
 
                     {/* Add Item Button (Hidden/Disabled) */}
@@ -746,16 +788,16 @@ export default function ProsesPeminjamanPage() {
                             color: '#FFFFFF',
                             border: 'none',
                             borderRadius: '8px',
-                            fontSize: '15px',
+                            fontSize: '16px',
                             fontWeight: 600,
                             cursor: 'pointer',
                             fontFamily: 'inherit',
                         }}
                     >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                            <path d="M17 21v-8H7v8M7 3v5h8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
+                        <iconify-icon
+                            icon="material-symbols:save-rounded"
+                            height="24"
+                        />
                         Simpan
                     </button>
                     <button
@@ -769,18 +811,18 @@ export default function ProsesPeminjamanPage() {
                             padding: '12px 24px',
                             background: isAllFilled ? '#FFFFFF' : '#F9FAFB',
                             color: isAllFilled ? '#333333' : '#9CA3AF',
-                            border: '1px solid #E0E0E0',
+                            border: isAllFilled ? '1px solid #2F516A' : '1px solid #E0E0E0',
                             borderRadius: '8px',
-                            fontSize: '15px',
+                            fontSize: '16px',
                             fontWeight: 600,
                             cursor: isAllFilled ? 'pointer' : 'not-allowed',
                             fontFamily: 'inherit',
                         }}
                     >
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M6 9V2h12v7M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                            <path d="M6 14h12v8H6z" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
+                        <iconify-icon
+                            icon="material-symbols-light:print-rounded"
+                            height="24"
+                        />
                         Cetak
                     </button>
                 </div>
