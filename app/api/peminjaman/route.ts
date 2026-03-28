@@ -126,6 +126,11 @@ export async function PUT(request: Request) {
 
                         // Update Status of DetailProduk if Peminjaman is DIPINJAM
                         if (status === 'DIPINJAM') {
+                            const dp = await tx.detailProduk.findUnique({ where: { id: detail_produk_id }, include: { produk: true } });
+                            if (dp?.status === 'DIPINJAM') {
+                                throw new Error(`Barang ${dp.produk.nama} (${dp.kode_seri || detail_produk_id}) sudah dipinjam! Refresh halaman untuk membatalkan serial.`);
+                            }
+
                             const updatedDetailProduk = await tx.detailProduk.update({
                                 where: { id: detail_produk_id },
                                 data: { status: 'DIPINJAM' },

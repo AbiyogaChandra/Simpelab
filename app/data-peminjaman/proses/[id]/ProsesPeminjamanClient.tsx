@@ -114,7 +114,7 @@ export default function ProsesPeminjamanPage() {
         }
     };
 
-    const handleAddSerial = (itemId: string, productId: number, specificSerialCode?: string) => {
+    const handleAddSerial = async (itemId: string, productId: number, specificSerialCode?: string) => {
         const inputVal = specificSerialCode || serialInputs[itemId];
         if (!inputVal) return;
 
@@ -125,33 +125,69 @@ export default function ProsesPeminjamanPage() {
             (!s.kode_seri && s.id.toString() === inputVal)
         );
 
-        if (found) {
-            setItems(prev => prev.map(item => {
-                if (item.id === itemId) {
-                    // Check if already selected
-                    if (item.selectedSerials.some(s => s.id === found.id)) return item;
-                    // Check quantity limit
-                    if (item.selectedSerials.length >= item.kuantitas) {
-                        alert(`Maksimal ${item.kuantitas} serial number.`);
-                        return item;
-                    }
-
-                    return {
-                        ...item,
-                        selectedSerials: [...item.selectedSerials, { id: found.id, kode: found.kode_seri || found.id.toString() }]
-                    };
-                }
-                return item;
-            }));
-            // Clear input and close dropdown
-            setSerialInputs(prev => ({ ...prev, [itemId]: '' }));
-            setActiveSerialInput(null);
-        } else {
+        if (!found) {
             alert('Serial Number tidak ditemukan atau tidak tersedia.');
+            return;
+        }
+
+        // Validate limits before updating
+        const targetItem = items.find(i => i.id === itemId);
+        if (!targetItem) return;
+        
+        if (targetItem.selectedSerials.some(s => s.id === found.id)) return;
+        if (targetItem.selectedSerials.length >= targetItem.kuantitas) {
+            alert(`Maksimal ${targetItem.kuantitas} serial number.`);
+            return;
+        }
+
+        // Optimistic UI Update
+        setItems(prev => prev.map(item => {
+            if (item.id === itemId) {
+                return {
+                    ...item,
+                    selectedSerials: [...item.selectedSerials, { id: found.id, kode: found.kode_seri || found.id.toString() }]
+                };
+            }
+            return item;
+        }));
+        
+        // Clear input and close dropdown
+        setSerialInputs(prev => ({ ...prev, [itemId]: '' }));
+        setActiveSerialInput(null);
+
+        // Async API Draft Synchronization
+        try {
+            const res = await fetch('/api/peminjaman/draft', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id_detail_pengajuan: itemId,
+                    detail_produk_id: found.id
+                })
+            });
+            
+            if (!res.ok) {
+                const err = await res.json();
+                alert(err.error || 'Gagal menyimpan draft ke database');
+                // Revert UI Update on Backend Error
+                setItems(prev => prev.map(item => {
+                    if (item.id === itemId) {
+                        return { ...item, selectedSerials: item.selectedSerials.filter(s => s.id !== found.id) };
+                    }
+                    return item;
+                }));
+            }
+        } catch (error) {
+            console.error('Draft POST fail:', error);
         }
     };
 
-    const handleRemoveSerial = (itemId: string, serialId: number) => {
+    const handleRemoveSerial = async (itemId: string, serialId: number) => {
+        // Find serial to revert if failure
+        const targetItem = items.find(i => i.id === itemId);
+        const removedSerial = targetItem?.selectedSerials.find(s => s.id === serialId);
+
+        // Optimistic UI Update
         setItems(prev => prev.map(item => {
             if (item.id === itemId) {
                 return {
@@ -161,6 +197,31 @@ export default function ProsesPeminjamanPage() {
             }
             return item;
         }));
+
+        // Async API Draft Deletion
+        try {
+            const res = await fetch('/api/peminjaman/draft', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id_detail_pengajuan: itemId,
+                    detail_produk_id: serialId
+                })
+            });
+
+            if (!res.ok) {
+                alert('Gagal menghapus draft serial dari database');
+                // Revert UI if needed
+                if (removedSerial) {
+                    setItems(prev => prev.map(item => {
+                        if (item.id === itemId) return { ...item, selectedSerials: [...item.selectedSerials, removedSerial] };
+                        return item;
+                    }));
+                }
+            }
+        } catch (error) {
+           console.error('Draft DELETE fail:', error);
+        }
     };
 
     const handleQuantityChange = (itemId: string, newQuantity: number) => {
@@ -231,8 +292,10 @@ export default function ProsesPeminjamanPage() {
     };
 
     const handleCetak = () => {
-        window.print();
+        window.open(`/api/cetak/${id}`, '_blank');
     };
+
+    const isAllFilled = items.length > 0 && items.every(i => i.selectedSerials.length === i.kuantitas);
 
     const inputStyle = {
         width: '100%' as const,
@@ -698,18 +761,19 @@ export default function ProsesPeminjamanPage() {
                     <button
                         type="button"
                         onClick={handleCetak}
+                        disabled={!isAllFilled}
                         style={{
                             display: 'inline-flex',
                             alignItems: 'center',
                             gap: '8px',
                             padding: '12px 24px',
-                            background: '#FFFFFF',
-                            color: '#333333',
+                            background: isAllFilled ? '#FFFFFF' : '#F9FAFB',
+                            color: isAllFilled ? '#333333' : '#9CA3AF',
                             border: '1px solid #E0E0E0',
                             borderRadius: '8px',
                             fontSize: '15px',
                             fontWeight: 600,
-                            cursor: 'pointer',
+                            cursor: isAllFilled ? 'pointer' : 'not-allowed',
                             fontFamily: 'inherit',
                         }}
                     >
