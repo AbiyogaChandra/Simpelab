@@ -106,15 +106,15 @@ function CreateProdukContent() {
         const errorData = await response.json();
         // Handle unique constraint error
         if (response.status === 409) {
-             alert(errorData.error || 'Kode produk sudah digunakan. Mohon gunakan kode lain.');
-             setIsLoading(false);
-             return;
+          alert(errorData.error || 'Kode produk sudah digunakan. Mohon gunakan kode lain.');
+          setIsLoading(false);
+          return;
         }
         throw new Error(errorData.error || `Failed to ${isEditing ? 'update' : 'create'} product`);
       }
 
       alert(`Produk berhasil ${isEditing ? 'diperbarui' : 'dibuat'}!`);
-      
+
       if (isEditing) {
         router.push('/data-inventaris');
       } else {
@@ -124,7 +124,7 @@ function CreateProdukContent() {
       console.error(`Error ${isEditing ? 'updating' : 'creating'} product:`, error);
       alert(`Gagal ${isEditing ? 'memperbarui' : 'membuat'} produk. Silakan coba lagi.`);
     } finally {
-        setIsLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -183,30 +183,40 @@ function CreateProdukContent() {
           <div style={{
             display: 'flex',
             alignItems: 'center',
-            gap: '12px',
-            marginBottom: '8px'
+            gap: '16px',
           }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="4" y="4" width="16" height="16" rx="2" stroke="#333333" strokeWidth="1.5" />
-              <path d="M8 8H16M8 12H16M8 16H12" stroke="#333333" strokeWidth="1.5" strokeLinecap="round" />
-            </svg>
-            <h2 style={{
-              color: '#333333',
-              fontSize: '20px',
-              fontWeight: 700
+            <div style={{
+              padding: '10px',
+              backgroundColor: '#F3F3F3',
+              borderRadius: '8px'
             }}>
-              Informasi Produk
-            </h2>
+              <iconify-icon
+                icon="gridicons:product"
+                height="24"
+                style={{
+                  color: '#1E1E1E'
+                }}
+              />
+            </div>
+            <div>
+              <h2 style={{
+                color: '#333333',
+                fontSize: '20px',
+                fontWeight: 700
+              }}>
+                Informasi Produk
+              </h2>
+              <p style={{
+                color: '#666666',
+                fontSize: '14px',
+                fontWeight: 400,
+              }}>
+                Isi data produk dengan lengkap
+              </p>
+            </div>
           </div>
-          <p style={{
-            color: '#666666',
-            fontSize: '14px',
-            fontWeight: 400,
-            marginBottom: '24px',
-            marginLeft: '36px'
-          }}>
-            Isi data produk dengan lengkap
-          </p>
+
+          <hr style={{ margin: '24px 0px' }} />
 
           {/* Form */}
           <form onSubmit={handleSubmit}>
@@ -250,9 +260,13 @@ function CreateProdukContent() {
                   transform: 'translateY(-50%)',
                   pointerEvents: 'none'
                 }}>
-                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M1 1L6 6L11 1" stroke="#666666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
+                  <iconify-icon
+                    icon="icon-park-outline:down"
+                    height="20"
+                    style={{
+                      color: '#A7A7A7'
+                    }}
+                  />
                 </div>
               </div>
             </div>
@@ -424,63 +438,57 @@ function CreateProdukContent() {
               />
             </div>
 
-            {/* Buttons */}
-            <div style={{
-              display: 'flex',
-              gap: '16px',
-              justifyContent: 'flex-end'
-            }}>
-              {/* Reset Form Button */}
+            {/* Actions */}
+            <div style={{ display: 'flex', gap: '16px', marginTop: '32px' }}>
+              <button
+                type="submit"
+                style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '16px',
+                  background: '#2F516A',
+                  border: 'none',
+                  borderRadius: '8px',
+                  color: '#FFFFFF',
+                  fontSize: '16px',
+                  fontWeight: 400,
+                  cursor: 'pointer',
+                  transition: 'background 0.2s',
+                  boxShadow: '0 4px 6px rgba(47, 81, 106, 0.2)'
+                }}
+              >
+                <iconify-icon
+                  icon="material-symbols:save-rounded"
+                  height="20"
+                />
+                {isEditing ? 'Simpan Perubahan' : 'Tambahkan Produk'}
+              </button>
               <button
                 type="button"
                 onClick={handleReset}
                 style={{
-                  padding: '12px 24px',
-                  border: '1px solid #E0E0E0',
-                  borderRadius: '8px',
+                  display: 'flex',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  gap: '10px',
+                  padding: '16px',
                   background: '#FFFFFF',
-                  color: '#333333',
-                  fontSize: '14px',
-                  fontWeight: 600,
+                  border: '1px solid #2F516A',
+                  borderRadius: '12px',
+                  color: '#2F516A',
+                  fontSize: '16px',
+                  fontWeight: 400,
                   cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  fontFamily: 'inherit'
+                  transition: 'all 0.2s'
                 }}
               >
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M8 2C11.3137 2 14 4.68629 14 8C14 11.3137 11.3137 14 8 14M8 2C4.68629 2 2 4.68629 2 8C2 11.3137 4.68629 14 8 14M8 2V6M8 14V10" stroke="#333333" strokeWidth="1.5" strokeLinecap="round" />
-                  <path d="M4 4L8 8M12 12L8 8" stroke="#333333" strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
+                <iconify-icon
+                  icon="ri:reset-left-line"
+                  height="20"
+                />
                 Reset Form
-              </button>
-
-              {/* Simpan Produk Button */}
-              <button
-                type="submit"
-                disabled={isLoading}
-                style={{
-                  padding: '12px 24px',
-                  border: 'none',
-                  borderRadius: '8px',
-                  background: '#2F516A',
-                  color: '#FFFFFF',
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  cursor: isLoading ? 'not-allowed' : 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  fontFamily: 'inherit',
-                   opacity: isLoading ? 0.7 : 1
-                }}
-              >
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="4" y="4" width="8" height="8" rx="1" stroke="white" strokeWidth="1.5" />
-                  <path d="M6 8H10" stroke="white" strokeWidth="1.5" strokeLinecap="round" />
-                </svg>
-                {isLoading ? 'Menyimpan...' : (isEditing ? 'Simpan Perubahan' : 'Simpan Produk')}
               </button>
             </div>
           </form>
@@ -491,9 +499,9 @@ function CreateProdukContent() {
 }
 
 export default function CreateProdukPage() {
-    return (
-        <Suspense fallback={<div>Loading...</div>}>
-            <CreateProdukContent />
-        </Suspense>
-    );
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <CreateProdukContent />
+    </Suspense>
+  );
 }

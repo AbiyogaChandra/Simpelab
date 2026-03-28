@@ -107,10 +107,12 @@ export default function Sidebar() {
                     }}
                     className="flex items-center gap-3 px-4 py-3 rounded-lg cursor-pointer hover:bg-red-50"
                 >
-                    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M7 17H4C3.44772 17 3 16.5523 3 16V4C3 3.44772 3.44772 3 4 3H7M14 14L17 10M17 10L14 6M17 10H7" stroke="#666666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
-                    <span className="text-[#666666] text-base font-normal">
+                    <iconify-icon
+                        icon="humbleicons:logout"
+                        height="24"
+                        className='text-[#2F516A]'
+                    />
+                    <span className="text-[#616161] text-base font-normal">
                         Keluar
                     </span>
                 </div>

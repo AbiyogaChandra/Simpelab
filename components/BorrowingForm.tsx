@@ -591,9 +591,10 @@ export default function BorrowingForm() {
                 e.currentTarget.style.backgroundColor = '#FFFFFF';
               }}
             >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 5V19M5 12H19" stroke="#2F516A" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+              <iconify-icon
+                icon="ic:round-plus"
+                height="24"
+              />
               <span>Tambahkan Barang</span>
             </button>
           </div>
@@ -729,6 +730,7 @@ export default function BorrowingForm() {
                 placeholder="Cari produk..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
+                className='placeholder-[#9CA3AF]'
                 style={{
                   width: '100%',
                   padding: '12px 16px 12px 40px',
@@ -745,11 +747,12 @@ export default function BorrowingForm() {
                 top: '50%',
                 transform: 'translateY(-50%)',
                 pointerEvents: 'none',
+                color: '#2F516A'
               }}>
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M7.33333 12.6667C10.2789 12.6667 12.6667 10.2789 12.6667 7.33333C12.6667 4.38781 10.2789 2 7.33333 2C4.38781 2 2 4.38781 2 7.33333C2 10.2789 4.38781 12.6667 7.33333 12.6667Z" stroke="#666666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                  <path d="M14 14L11.1 11.1" stroke="#666666" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
+                <iconify-icon
+                  icon="iconamoon:search"
+                  height="24"
+                />
               </div>
             </div>
 

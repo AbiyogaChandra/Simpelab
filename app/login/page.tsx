@@ -27,7 +27,7 @@ export default function LoginAdminPage() {
 
       if (res.ok) {
         router.push('/dashboard');
-        router.refresh(); 
+        router.refresh();
       } else {
         const data = await res.json();
         setError(data.error || 'Login failed');
@@ -59,11 +59,11 @@ export default function LoginAdminPage() {
         <h1 className="text-[#333333] text-[28px] font-bold text-center mb-8">
           Login Admin
         </h1>
-        
+
         {error && (
-            <div className="mb-4 p-3 bg-red-100 text-red-600 rounded-lg text-sm text-center">
-                {error}
-            </div>
+          <div className="mb-4 p-3 bg-red-100 text-red-600 rounded-lg text-sm text-center">
+            {error}
+          </div>
         )}
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-6">
@@ -82,12 +82,12 @@ export default function LoginAdminPage() {
                 disabled={loading}
                 className="w-full pl-11 pr-4 py-3.5 border border-[#F1F1F1] bg-[#F9FAFB] rounded-xl text-sm text-[#333333] placeholder-[#9CA3AF] focus:outline-none focus:border-[#2F516A] transition-colors"
               />
-              <div className="absolute left-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                 {/* User Icon */}
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M20 21C20 19.3431 18.6569 18 17 18H7C5.34315 18 4 19.3431 4 21" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  <circle cx="12" cy="7" r="4" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
+              <div className="absolute left-4 top-1/2 transform -translate-y-1/2 pointer-events-none" style={{ color: '#A7A7A7' }}>
+                {/* User Icon */}
+                <iconify-icon
+                  icon="uil:user"
+                  height="20"
+                />
               </div>
             </div>
           </div>
@@ -107,12 +107,12 @@ export default function LoginAdminPage() {
                 disabled={loading}
                 className="w-full pl-11 pr-4 py-3.5 border border-[#F1F1F1] bg-[#F9FAFB] rounded-xl text-sm text-[#333333] placeholder-[#9CA3AF] focus:outline-none focus:border-[#2F516A] transition-colors"
               />
-              <div className="absolute left-4 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                 {/* Lock Icon */}
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                   <rect x="3" y="11" width="18" height="11" rx="2" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                   <path d="M7 11V7C7 4.23858 9.23858 2 12 2C14.7614 2 17 4.23858 17 7V11" stroke="#9CA3AF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
+              <div className="absolute left-4 top-1/2 transform -translate-y-1/2 pointer-events-none" style={{ color: '#A7A7A7' }}>
+                {/* Lock Icon */}
+                <iconify-icon
+                  icon="mdi:password-outline"
+                  height="20"
+                />
               </div>
             </div>
           </div>
