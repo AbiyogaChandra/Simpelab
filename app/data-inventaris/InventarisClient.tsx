@@ -47,7 +47,7 @@ export default function DataInventarisPage() {
   const [loading, setLoading] = useState(true);
 
   // Pagination State
-  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
@@ -426,27 +426,29 @@ export default function DataInventarisPage() {
                     background: '#E3F2FD',
                     borderBottom: '1px solid #E0E0E0'
                   }}>
-                    <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>No</th>
+                    <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600, width: '1%', whiteSpace: 'nowrap' }}>No</th>
                     {activeTab === 'produk' ? (
                       <>
-                        <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Kategori</th>
+                        <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600, width: '1%', whiteSpace: 'nowrap' }}>Kategori</th>
                         <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Nama Produk</th>
                         <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Kode Produk</th>
                         <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Merk</th>
                         <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Tipe/Model</th>
-                        <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Stok</th>
-                        <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Jumlah Barang</th>
+                        <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Spesifikasi</th>
+                        <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600, width: '1%', whiteSpace: 'nowrap' }}>Stok</th>
+                        <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600, width: '1%', whiteSpace: 'nowrap' }}>Jumlah Barang</th>
                       </>
                     ) : (
                       <>
-                        <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Kategori</th>
+                        <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600, width: '1%', whiteSpace: 'nowrap' }}>Kategori</th>
                         <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Nama Produk</th>
+                        <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Kode Produk</th>
                         <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Kode Seri</th>
                         <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Lokasi</th>
-                        <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Status</th>
+                        <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600, width: '1%', whiteSpace: 'nowrap' }}>Status</th>
                       </>
                     )}
-                    <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Aksi</th>
+                    <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600, width: '1%', whiteSpace: 'nowrap' }}>Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -475,6 +477,7 @@ export default function DataInventarisPage() {
                           <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{p.kode}</td>
                           <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{p.merk}</td>
                           <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{p.model}</td>
+                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{p.spesifikasi || '-'}</td>
                           <td style={{ padding: '16px' }}>
                             <span style={{
                               display: 'inline-block',
@@ -541,6 +544,7 @@ export default function DataInventarisPage() {
                             </span>
                           </td>
                           <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{d.produk?.nama || '-'}</td>
+                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{d.produk?.kode || '-'}</td>
                           <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{d.kode_seri || '-'}</td>
                           {/* <td style={{ padding: '16px' }}>
                             <span style={{
@@ -623,6 +627,9 @@ export default function DataInventarisPage() {
                   <option value="5">5</option>
                   <option value="10">10</option>
                   <option value="20">20</option>
+                  <option value="30">30</option>
+                  <option value="40">40</option>
+                  <option value="50">50</option>
                 </select>
                 <span style={{ color: '#666666', fontSize: '14px' }}>
                   Results: {totalItems > 0 ? startIndex + 1 : 0}-{Math.min(endIndex, totalItems)} of {totalItems}
