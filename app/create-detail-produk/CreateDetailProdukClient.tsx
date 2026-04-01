@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Sidebar from '@/components/Sidebar';
 import { useSearchParams, useRouter } from 'next/navigation';
 import QRCode from "react-qr-code";
+import PhotoPickerModal from "@/components/PhotoPickerModal";
 
 function CreateDetailProdukContent() {
   const router = useRouter();
@@ -79,6 +80,10 @@ function CreateDetailProdukContent() {
   const [showLokasiDropdown, setShowLokasiDropdown] = useState(false);
   const [selectedRuang, setSelectedRuang] = useState<string | null>(null);
   const [isGeneratingSerial, setIsGeneratingSerial] = useState(false);
+  
+  // for photopicker
+const [openPhoto, setOpenPhoto] = useState(false);
+const [selectedImage, setSelectedImage] = useState<File | null>(null);
 
   // Filter products based on search
   const filteredProduk = produkList.filter(produk =>
@@ -855,6 +860,49 @@ function CreateDetailProdukContent() {
               </div>
             </div>
 
+            {/* FOTO PRODUK */}
+<div style={{ marginTop: '24px' }}>
+  <label style={{
+    display: 'block',
+    fontSize: '14px',
+    fontWeight: 600,
+    marginBottom: '8px'
+  }}>
+    Foto Produk
+  </label>
+
+  <div
+    onClick={() => setOpenPhoto(true)}
+    style={{
+      border: '2px dashed #E0E0E0',
+      borderRadius: '12px',
+      padding: '20px',
+      textAlign: 'center',
+      cursor: 'pointer',
+      background: '#FAFAFA'
+    }}
+  >
+    {selectedImage ? (
+      <img
+        src={URL.createObjectURL(selectedImage)}
+        style={{
+          width: '120px',
+          height: '120px',
+          objectFit: 'cover',
+          borderRadius: '12px'
+        }}
+      />
+    ) : (
+      <>
+        <div style={{ fontSize: '32px' }}>📷</div>
+        <p style={{ fontSize: '14px', color: '#777' }}>
+          Tambahkan Foto
+        </p>
+      </>
+    )}
+  </div>
+</div>
+
             <hr style={{ margin: '8px 0px' }} />
 
             {/* Actions */}
@@ -909,8 +957,60 @@ function CreateDetailProdukContent() {
                 />
                 Reset Form
               </button>
+              {/* FOTO PRODUK */}
+<div style={{ marginTop: '24px' }}>
+  <label style={{
+    display: 'block',
+    fontSize: '14px',
+    fontWeight: 600,
+    marginBottom: '8px'
+  }}>
+    Foto Produk
+  </label>
+
+  <div
+    onClick={() => setOpenPhoto(true)}
+    style={{
+      border: '2px dashed #E0E0E0',
+      borderRadius: '12px',
+      padding: '20px',
+      textAlign: 'center',
+      cursor: 'pointer',
+      background: '#FAFAFA'
+    }}
+  >
+    {selectedImage ? (
+      <img
+        src={URL.createObjectURL(selectedImage)}
+        style={{
+          width: '120px',
+          height: '120px',
+          objectFit: 'cover',
+          borderRadius: '12px'
+        }}
+      />
+    ) : (
+      <>
+        <div style={{ fontSize: '32px' }}>📷</div>
+        <p style={{ fontSize: '14px', color: '#777' }}>
+          Tambahkan Foto
+        </p>
+      </>
+    )}
+  </div>
+</div>
+
+<hr style={{ margin: '8px 0px' }} />
             </div>
           </form>
+          <PhotoPickerModal
+  isOpen={openPhoto}
+  onClose={() => setOpenPhoto(false)}
+  onSelect={(file) => {
+    setSelectedImage(file);
+    setOpenPhoto(false);
+  }}
+/>
         </div>
       </div>
 
