@@ -226,23 +226,31 @@ export default function BorrowingForm() {
         height: '100vh',
         background: '#425B67',
         position: 'sticky',
-        top: 0,
+        top: '0px',
         overflow: 'hidden'
       }}>
         {/* Illustration Image - Full Background */}
-        <Image
-          src="/illustration.webp"
-          alt="Lab Illustration"
-          fill
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            objectFit: 'cover',
-            objectPosition: 'bottom',
-            display: 'block'
-          }}
-        />
+        <div style={{
+          position: 'absolute',
+          height: '100%',
+          width: '100%',
+          top: '0px',
+          left: '0px',
+          right: '0px',
+          bottom: '0px',
+        }}>
+          <Image
+            src="/illustration.webp"
+            alt="Lab Illustration"
+            fill
+            sizes="100%"
+            loading='eager'
+            style={{
+              objectFit: 'cover',
+              objectPosition: 'bottom'
+            }}
+          />
+        </div>
 
         {/* Overlay Content */}
         <div style={{
