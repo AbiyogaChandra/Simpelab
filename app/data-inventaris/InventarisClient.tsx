@@ -752,7 +752,7 @@ export default function DataInventarisPage() {
             background: 'white',
             padding: '32px',
             borderRadius: '16px',
-            width: '700px',
+            width: '800px',
             maxWidth: '90%',
             position: 'relative',
             display: 'flex',
@@ -772,7 +772,7 @@ export default function DataInventarisPage() {
             </div>
 
             {/* Content */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '250px 1fr', gap: '24px' }}>
               {/* Left: QR Code */}
               <div style={{
                 background: '#F9FAFB',
@@ -813,7 +813,34 @@ export default function DataInventarisPage() {
               </div>
 
               {/* Right: Details */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', alignContent: 'start' }}>
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#1E1E1E', margin: '0 0 8px 0', borderBottom: '1px solid #E0E0E0', paddingBottom: '8px' }}>Informasi Produk</h3>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', color: '#666', marginBottom: '4px' }}>Kategori</label>
+                  <div style={{ fontSize: '14px', fontWeight: 500, color: '#333' }}>{selectedDetail.produk.kategori === 'ASET' ? 'Aset' : selectedDetail.produk.kategori === 'HP' ? 'Habis Pakai' : selectedDetail.produk.kategori}</div>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', color: '#666', marginBottom: '4px' }}>Kode Produk</label>
+                  <div style={{ fontSize: '14px', fontWeight: 500, color: '#333' }}>{selectedDetail.produk.kode}</div>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', color: '#666', marginBottom: '4px' }}>Merk</label>
+                  <div style={{ fontSize: '14px', fontWeight: 500, color: '#333' }}>{selectedDetail.produk.merk}</div>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '12px', color: '#666', marginBottom: '4px' }}>Tipe/Model</label>
+                  <div style={{ fontSize: '14px', fontWeight: 500, color: '#333' }}>{selectedDetail.produk.model}</div>
+                </div>
+                <div style={{ gridColumn: '1 / -1' }}>
+                  <label style={{ display: 'block', fontSize: '12px', color: '#666', marginBottom: '4px' }}>Spesifikasi</label>
+                  <div style={{ fontSize: '14px', fontWeight: 500, color: '#333' }}>{selectedDetail.produk.spesifikasi || '-'}</div>
+                </div>
+
+                <div style={{ gridColumn: '1 / -1', marginTop: '8px' }}>
+                  <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#1E1E1E', margin: '0 0 8px 0', borderBottom: '1px solid #E0E0E0', paddingBottom: '8px' }}>Detail Barang</h3>
+                </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', color: '#666', marginBottom: '4px' }}>Kode Seri</label>
                   <div style={{ fontSize: '14px', fontWeight: 500, color: '#333' }}>{selectedDetail.kode_seri || '-'}</div>
@@ -832,17 +859,19 @@ export default function DataInventarisPage() {
                 </div>
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', color: '#666', marginBottom: '4px' }}>Status</label>
-                  <span style={{
-                    display: 'inline-block',
-                    padding: '4px 10px',
-                    borderRadius: '12px',
-                    background: selectedDetail.status === 'TERSEDIA' ? '#D1FAE5' : '#FEE2E2',
-                    color: selectedDetail.status === 'TERSEDIA' ? '#065F46' : '#991B1B',
-                    fontSize: '12px',
-                    fontWeight: 500
-                  }}>
-                    {selectedDetail.status}
-                  </span>
+                  <div>
+                    <span style={{
+                      display: 'inline-block',
+                      padding: '4px 10px',
+                      borderRadius: '12px',
+                      background: selectedDetail.status === 'TERSEDIA' ? '#D1FAE5' : '#FEE2E2',
+                      color: selectedDetail.status === 'TERSEDIA' ? '#065F46' : '#991B1B',
+                      fontSize: '12px',
+                      fontWeight: 500
+                    }}>
+                      {selectedDetail.status}
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
