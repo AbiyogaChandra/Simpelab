@@ -24,21 +24,25 @@ export default function PhotoPickerModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/40">
-      <div className="w-full max-w-md bg-white rounded-t-2xl p-4 shadow-lg animate-slideUp">
-        
-        {/* Title */}
-        <p className="text-sm text-gray-500 mb-3">
-          Pop up pilih foto atau ambil foto
-        </p>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+      <div className="w-full max-w-md bg-white rounded-2xl p-8 shadow-lg animate-slideUp">
 
         {/* Camera Box */}
         <div
           onClick={() => cameraRef.current?.click()}
-          className="border rounded-xl p-6 flex flex-col items-center justify-center cursor-pointer mb-3"
+          className="p-6 flex flex-col items-center justify-center cursor-pointer mb-3"
+          style={{
+            backgroundColor: '#FBFBFA',
+            border: '2px solid #2F516A',
+            borderRadius: '8px'
+          }}
         >
-          <div className="text-3xl mb-2">📷</div>
-          <p className="text-sm text-gray-500">
+          <iconify-icon
+            icon="material-symbols:camera"
+            height="110"
+            style={{ color: '#DBDBD3' }}
+          />
+          <p className="text-sm" style={{ color: '#979783' }}>
             Ambil foto dengan kamera
           </p>
         </div>
@@ -56,7 +60,7 @@ export default function PhotoPickerModal({
           onClick={onClose}
           className="w-full bg-gray-200 py-2 rounded-lg text-gray-700"
         >
-          tutup
+          Tutup
         </button>
 
         {/* Hidden Inputs */}

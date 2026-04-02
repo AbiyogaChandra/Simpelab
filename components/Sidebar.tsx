@@ -59,7 +59,7 @@ export default function Sidebar() {
     ];
 
     return (
-        <div className="fixed left-0 top-0 w-[280px] bg-white flex flex-col h-screen shadow-[2px_0_4px_rgba(0,0,0,0.05)] z-[1000] overflow-y-auto">
+        <div className="fixed left-0 top-0 w-[280px] bg-white flex flex-col h-screen shadow-[2px_0_4px_rgba(0,0,0,0.05)] z-[10] overflow-y-auto">
             {/* Header */}
             <div className="p-6 border-b border-[#E5E5E5]">
                 <div className="flex items-center gap-2">
