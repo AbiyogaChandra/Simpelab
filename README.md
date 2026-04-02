@@ -23,13 +23,13 @@ npm ci
 4. Generate Prisma Client.
 
 ```bash
-npx run db:generate
+npm run db:generate
 ```
 
 5. Buat file database.
 
 ```bash
-npx run db:push
+npm run db:push
 ```
 
 6. Seeding database.
