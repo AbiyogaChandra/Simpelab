@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import Image from 'next/image'
 import moment from 'moment';
 
@@ -263,24 +264,26 @@ export default function BorrowingForm() {
         }}>
           {/* Logo */}
           <div style={{ marginBottom: '40px' }}>
-            <div style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '6px',
-              background: '#FFFFFF',
-              borderRadius: '24px',
-              padding: '4px 8px'
-            }}>
-              <Image src="/logo.webp" alt="Simpelab Logo" loading='eager' width={56} height={56} />
-              <span style={{
-                color: '#2F516A',
-                fontSize: '26px',
-                fontWeight: 700,
-                fontFamily: 'Outfit, sans-serif'
+            <Link href="/" style={{ textDecoration: 'none' }}>
+              <div style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: '#FFFFFF',
+                borderRadius: '24px',
+                padding: '4px 8px'
               }}>
-                Simpelab
-              </span>
-            </div>
+                <Image src="/logo.webp" alt="Simpelab Logo" loading='eager' width={56} height={56} />
+                <span style={{
+                  color: '#2F516A',
+                  fontSize: '26px',
+                  fontWeight: 700,
+                  fontFamily: 'Outfit, sans-serif'
+                }}>
+                  Simpelab
+                </span>
+              </div>
+            </Link>
           </div>
 
           {/* Welcome Text */}

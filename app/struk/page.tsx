@@ -4,6 +4,7 @@ import { Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import moment from 'moment';
 import Image from 'next/image';
+import Link from 'next/link';
 
 function StrukContent() {
   const searchParams = useSearchParams();
@@ -36,17 +37,19 @@ function StrukContent() {
         <div style={{
           marginBottom: '32px'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <Image src="/logo.webp" alt="Simpelab Logo" width={40} height={40} />
-            <span style={{
-              color: '#000000',
-              fontSize: '24px',
-              fontWeight: 700,
-              fontFamily: 'Outfit, sans-serif'
-            }}>
-              Simpelab
-            </span>
-          </div>
+          <Link href="/" style={{ textDecoration: 'none' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <Image src="/logo.webp" alt="Simpelab Logo" width={40} height={40} />
+              <span style={{
+                color: '#000000',
+                fontSize: '24px',
+                fontWeight: 700,
+                fontFamily: 'Outfit, sans-serif'
+              }}>
+                Simpelab
+              </span>
+            </div>
+          </Link>
         </div>
 
         {/* Receipt Card */}
