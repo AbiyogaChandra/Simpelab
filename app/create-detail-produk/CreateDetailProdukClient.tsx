@@ -13,14 +13,21 @@ function CreateDetailProdukContent() {
   const editId = searchParams.get('id');
   const isEditing = !!editId;
 
-  const [formData, setFormData] = useState({
+  const initialEmptyData = {
     pilihProduk: '',
     nomorSeri: '',
     tanggalMasuk: '',
     letak: '',
     kondisi: 'BAIK',
-    kodeScan: '', // Used for editing or generated
-  });
+    kodeScan: '',
+  };
+
+  const [formData, setFormData] = useState(initialEmptyData);
+  const [initialFormData, setInitialFormData] = useState(initialEmptyData);
+  const [initialSearchQuery, setInitialSearchQuery] = useState('');
+  const [initialLokasiQuery, setInitialLokasiQuery] = useState('');
+  const [initialRuang, setInitialRuang] = useState<string | null>(null);
+  const [initialFotoUrl, setInitialFotoUrl] = useState<string | null>(null);
 
   const [produkList, setProdukList] = useState<any[]>([]);
   const [lokasiList, setLokasiList] = useState<any[]>([]);
@@ -46,18 +53,29 @@ function CreateDetailProdukContent() {
             const detailData = await detailRes.json();
             if (detailData.length > 0) {
               const item = detailData[0];
-              setFormData({
+              const loadedData = {
                 pilihProduk: item.id_produk.toString(),
                 nomorSeri: item.kode_seri || '',
                 tanggalMasuk: '', // Date usually managed by created_at if not explicit input
                 letak: item.id_lokasi.toString(),
                 kondisi: item.kondisi,
                 kodeScan: item.kode_scan || '',
-              });
+              };
+              setFormData(loadedData);
+              setInitialFormData(loadedData);
               // Initialize search queries for autocomplete
-              setSearchQuery(`${item.produk.nama} - ${item.produk.merk} - ${item.produk.model} - ${item.produk.spesifikasi} (${item.produk.kode})`);
+              const sQuery = `${item.produk.nama} - ${item.produk.merk} - ${item.produk.model} - ${item.produk.spesifikasi} (${item.produk.kode})`;
+              setSearchQuery(sQuery);
+              setInitialSearchQuery(sQuery);
               setLokasiSearchQuery(item.lokasi.keterangan);
+              setInitialLokasiQuery(item.lokasi.keterangan);
               setSelectedRuang(item.lokasi.nama_ruang);
+              setInitialRuang(item.lokasi.nama_ruang);
+              // Load existing photo
+              if (item.foto) {
+                setExistingFotoUrl(item.foto);
+                setInitialFotoUrl(item.foto);
+              }
             }
           }
         }
@@ -79,11 +97,11 @@ function CreateDetailProdukContent() {
   const [lokasiSearchQuery, setLokasiSearchQuery] = useState('');
   const [showLokasiDropdown, setShowLokasiDropdown] = useState(false);
   const [selectedRuang, setSelectedRuang] = useState<string | null>(null);
-  const [isGeneratingSerial, setIsGeneratingSerial] = useState(false);
 
   // for photopicker
   const [openPhoto, setOpenPhoto] = useState(false);
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [existingFotoUrl, setExistingFotoUrl] = useState<string | null>(null);
 
   // Filter products based on search
   const filteredProduk = produkList.filter(produk =>
@@ -114,8 +132,18 @@ function CreateDetailProdukContent() {
     setFormData(prev => ({ ...prev, pilihProduk: '' }));
   };
 
+
+  /** Generate a random 32-char alphanumeric serial. Collision probability is negligible (62^32). */
+  const generateSerial = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    return Array.from({ length: 32 }, () =>
+      chars.charAt(Math.floor(Math.random() * chars.length))
+    ).join('');
+  };
+
   const handleSelectProduk = (produk: any) => {
-    setFormData(prev => ({ ...prev, pilihProduk: produk.id }));
+    const serial = produk.kategori !== 'HP' ? generateSerial() : '';
+    setFormData(prev => ({ ...prev, pilihProduk: produk.id, nomorSeri: serial }));
     setSearchQuery(`${produk.nama} - ${produk.merk} - ${produk.model} - ${produk.spesifikasi} (${produk.kode})`);
     setShowDropdown(false);
   };
@@ -177,48 +205,6 @@ function CreateDetailProdukContent() {
     }
   };
 
-  const handleGenerateSerial = async () => {
-    if (!formData.pilihProduk) {
-      alert('Mohon pilih produk terlebih dahulu untuk memastikan keunikan kode seri.');
-      return;
-    }
-
-    setIsGeneratingSerial(true);
-    try {
-      const res = await fetch(`/api/detail-produk?id_produk=${formData.pilihProduk}`);
-      if (!res.ok) throw new Error('Failed to fetch existing products');
-
-      const data = await res.json();
-      const existingSerials = new Set(data.map((item: any) => item.kode_seri));
-
-      let candidate = '';
-      let isUnique = false;
-      let attempts = 0;
-
-      while (!isUnique && attempts < 10) {
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-        candidate = Array.from({ length: 32 }, () =>
-          chars.charAt(Math.floor(Math.random() * chars.length))
-        ).join('');
-
-        if (!existingSerials.has(candidate)) {
-          isUnique = true;
-        }
-        attempts++;
-      }
-
-      if (isUnique) {
-        setFormData(prev => ({ ...prev, nomorSeri: candidate }));
-      } else {
-        alert('Gagal membuat kode seri unik. Silakan coba lagi.');
-      }
-    } catch (error) {
-      console.error('Error generating serial:', error);
-      alert('Terjadi kesalahan saat generate kode seri.');
-    } finally {
-      setIsGeneratingSerial(false);
-    }
-  };
 
   const selectedProduct = formData.pilihProduk ? produkList.find(p => p.id === parseInt(formData.pilihProduk)) : null;
   const isHabisPakai = selectedProduct?.kategori === 'HP';
@@ -253,26 +239,26 @@ function CreateDetailProdukContent() {
       return;
     }
 
-    // Map form data to API schema
-    const apiData = {
-      id_produk: parseInt(formData.pilihProduk),
-      id_lokasi: parseInt(formData.letak),
-      kode_seri: isHabisPakai ? null : formData.nomorSeri,
-      status: 'TERSEDIA',
-      kondisi: formData.kondisi,
-      kode_scan: isHabisPakai ? null : getQRValue(),
-    };
+    // Build multipart/form-data so we can attach the photo file
+    const payload = new FormData();
+    payload.append('id_produk', formData.pilihProduk);
+    payload.append('id_lokasi', formData.letak);
+    payload.append('status', 'TERSEDIA');
+    payload.append('kondisi', formData.kondisi);
+    payload.append('kode_seri', isHabisPakai ? '' : (formData.nomorSeri || ''));
+    payload.append('kode_scan', isHabisPakai ? '' : (getQRValue() || ''));
+    if (selectedImage) {
+      payload.append('foto', selectedImage);
+    }
 
     try {
       const url = isEditing ? `/api/detail-produk?id=${editId}` : '/api/detail-produk';
       const method = isEditing ? 'PUT' : 'POST';
 
       const response = await fetch(url, {
-        method: method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(apiData),
+        method,
+        // Do NOT set Content-Type manually — browser sets it with boundary for FormData
+        body: payload,
       });
 
       if (!response.ok) {
@@ -294,17 +280,21 @@ function CreateDetailProdukContent() {
   };
 
   const handleReset = () => {
-    setFormData({
-      pilihProduk: '',
-      nomorSeri: '',
-      tanggalMasuk: '',
-      letak: '',
-      kondisi: 'BAIK',
-      kodeScan: '',
-    });
-    setSearchQuery('');
-    setLokasiSearchQuery('');
-    router.push('/create-detail-produk'); // Clear ID param
+    if (isEditing) {
+      setFormData(initialFormData);
+      setSearchQuery(initialSearchQuery);
+      setLokasiSearchQuery(initialLokasiQuery);
+      setSelectedRuang(initialRuang);
+      setSelectedImage(null);
+      setExistingFotoUrl(initialFotoUrl);
+    } else {
+      setFormData(initialEmptyData);
+      setSearchQuery('');
+      setLokasiSearchQuery('');
+      setSelectedRuang(null);
+      setSelectedImage(null);
+      setExistingFotoUrl(null);
+    }
   };
 
   const getQRValue = () => {
@@ -490,57 +480,25 @@ function CreateDetailProdukContent() {
                   }}>
                     Kode Seri
                   </label>
-                  <div style={{ display: 'flex', gap: '8px' }}>
-                    <input
-                      type="text"
-                      name="nomorSeri"
-                      value={isHabisPakai ? "" : formData.nomorSeri}
-                      onChange={handleChange}
-                      placeholder={isHabisPakai ? "Tidak diperlukan untuk barang habis pakai" : "Generasi otomatis..."}
-                      disabled
-                      style={{
-                        flex: 1,
-                        padding: '12px 16px',
-                        border: '1px solid #E0E0E0',
-                        borderRadius: '8px',
-                        fontSize: '14px',
-                        color: formData.nomorSeri ? '#333333' : '#999999',
-                        background: '#F9FAFB',
-                        fontFamily: 'inherit',
-                        cursor: 'not-allowed'
-                      }}
-                    />
-                    <button
-                      type="button"
-                      onClick={handleGenerateSerial}
-                      disabled={!formData.pilihProduk || isGeneratingSerial || isHabisPakai}
-                      style={{
-                        padding: '12px 16px',
-                        background: isHabisPakai ? '#E2E8F0' : '#0F172A',
-                        color: isHabisPakai ? '#94A3B8' : '#FFFFFF',
-                        border: 'none',
-                        borderRadius: '8px',
-                        fontSize: '14px',
-                        fontWeight: 500,
-                        cursor: (!formData.pilihProduk || isGeneratingSerial || isHabisPakai) ? 'not-allowed' : 'pointer',
-                        whiteSpace: 'nowrap',
-                        opacity: (!formData.pilihProduk || isGeneratingSerial) ? 0.5 : 1,
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px'
-                      }}
-                    >
-                      {isGeneratingSerial ? '...' : (
-                        <>
-                          <iconify-icon
-                            icon="tabler:dice"
-                            height="24"
-                          />
-                          Buat
-                        </>
-                      )}
-                    </button>
-                  </div>
+                  <input
+                    type="text"
+                    name="nomorSeri"
+                    value={isHabisPakai ? '' : formData.nomorSeri}
+                    readOnly
+                    placeholder={isHabisPakai ? 'Tidak diperlukan untuk barang habis pakai' : 'Dipilih otomatis saat produk dipilih...'}
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      border: '1px solid #E0E0E0',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      color: formData.nomorSeri ? '#333333' : '#999999',
+                      background: '#F9FAFB',
+                      fontFamily: 'inherit',
+                      cursor: 'default',
+                      boxSizing: 'border-box',
+                    }}
+                  />
                 </div>
 
 
@@ -893,6 +851,20 @@ function CreateDetailProdukContent() {
                       borderRadius: '12px'
                     }}
                   />
+                ) : existingFotoUrl ? (
+                  <>
+                    <img
+                      src={existingFotoUrl}
+                      style={{
+                        height: '480px',
+                        objectFit: 'cover',
+                        borderRadius: '12px'
+                      }}
+                    />
+                    <p style={{ fontSize: '13px', marginTop: '8px', color: '#999' }}>
+                      Klik untuk mengganti foto
+                    </p>
+                  </>
                 ) : (
                   <>
                     <iconify-icon

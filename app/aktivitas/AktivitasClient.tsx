@@ -12,7 +12,9 @@ export default function AktivitasPage() {
   const [showFilterDropdown, setShowFilterDropdown] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
-  const LIMIT = 20;
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const LIMIT = 5;
 
   const actionTags = ['Buat', 'Ubah', 'Hapus'];
   const targetTags = ['Produk', 'Detail Produk', 'Peminjaman', 'Lokasi'];
@@ -24,6 +26,8 @@ export default function AktivitasPage() {
         const query = new URLSearchParams();
         if (filter && filter !== 'Semua') query.append('tag', filter);
         if (search) query.append('search', search);
+        if (startDate) query.append('startDate', startDate);
+        if (endDate) query.append('endDate', endDate);
         query.append('page', page.toString());
         query.append('limit', LIMIT.toString());
 
@@ -51,7 +55,7 @@ export default function AktivitasPage() {
     }, 300); // Debounce search
 
     return () => clearTimeout(timeoutId);
-  }, [filter, search, page]);
+  }, [filter, search, page, startDate, endDate]);
 
   const getTagColor = (tag: string) => {
     switch (tag) {
@@ -146,13 +150,9 @@ export default function AktivitasPage() {
                 fontFamily: 'inherit'
               }}
             >
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M2 4H14M4 8H12M6 12H10" stroke={filter ? '#3730A3' : "#666666"} strokeWidth="1.5" strokeLinecap="round" />
-              </svg>
+              <iconify-icon icon="mi:filter" style={{ color: filter ? '#3730A3' : "#666666", fontSize: '16px' }}></iconify-icon>
               {filter || 'Filter'}
-              <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M1 1L6 6L11 1" stroke={filter ? '#3730A3' : "#666666"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
+              <iconify-icon icon="mdi:chevron-down" style={{ color: filter ? '#3730A3' : "#666666", fontSize: '16px' }}></iconify-icon>
             </button>
 
             {/* Filter Dropdown */}
@@ -258,24 +258,60 @@ export default function AktivitasPage() {
               left: '12px',
               top: '50%',
               transform: 'translateY(-50%)',
-              pointerEvents: 'none'
+              pointerEvents: 'none',
+              display: 'flex',
+              alignItems: 'center'
             }}>
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="7" cy="7" r="5" stroke="#666666" strokeWidth="1.5" />
-                <path d="M11 11L14 14" stroke="#666666" strokeWidth="1.5" strokeLinecap="round" />
-              </svg>
+              <iconify-icon icon="iconamoon:search" style={{ color: '#666666' }} width="16" />
+            </div>
+          </div>
+          <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <span style={{ fontSize: '12px', color: '#666666' }}>Mulai dari</span>
+              <input 
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                style={{
+                  padding: '12px 16px',
+                  border: '1px solid #E0E0E0',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  color: startDate ? '#000000' : '#999999',
+                  background: '#FFFFFF',
+                  fontFamily: 'inherit'
+                }}
+              />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <span style={{ fontSize: '12px', color: '#666666' }}>Sampai dengan</span>
+              <input 
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                style={{
+                  padding: '12px 16px',
+                  border: '1px solid #E0E0E0',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  color: endDate ? '#000000' : '#999999',
+                  background: '#FFFFFF',
+                  fontFamily: 'inherit'
+                }}
+              />
             </div>
           </div>
         </div>
 
-        {/* Activity Log Cards */}
+        {/* Activity Logs Feed */}
         <div style={{
           display: 'flex',
           flexDirection: 'column',
           gap: '16px'
         }}>
           {isLoading ? (
-            <div style={{ textAlign: 'center', padding: '40px', color: '#666666' }}>
+            <div style={{ textAlign: 'center', padding: '40px', color: '#666666', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
+              <iconify-icon icon="line-md:loading-twotone-loop" style={{ fontSize: '24px', color: '#2F516A' }}></iconify-icon>
               Memuat aktivitas...
             </div>
           ) : activityLogs.length === 0 ? (
@@ -283,7 +319,7 @@ export default function AktivitasPage() {
               Tidak ada aktivitas ditemukan
             </div>
           ) : (
-            activityLogs.map((log: any) => (
+            activityLogs.slice(0, 5).map((log: any) => (
               <div
                 key={log.id}
                 style={{
@@ -350,34 +386,38 @@ export default function AktivitasPage() {
             onClick={() => setPage(p => Math.max(1, p - 1))}
             disabled={page === 1}
             style={{
-              padding: '8px 16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '8px',
               borderRadius: '8px',
               border: '1px solid #E0E0E0',
               background: page === 1 ? '#F5F5F5' : '#FFFFFF',
-              color: page === 1 ? '#999999' : '#333333',
+              color: page === 1 ? '#999999' : '#2F516A',
               cursor: page === 1 ? 'not-allowed' : 'pointer',
-              fontSize: '14px'
             }}
           >
-            Sebelumnya
+            <iconify-icon icon="mdi:chevron-left" height="24" />
           </button>
           <span style={{ fontSize: '14px', color: '#666666' }}>
             Halaman {page} dari {totalPages}
           </span>
           <button
             onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-            disabled={page === totalPages}
+            disabled={page === totalPages || totalPages === 0}
             style={{
-              padding: '8px 16px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: '8px',
               borderRadius: '8px',
               border: '1px solid #E0E0E0',
-              background: page === totalPages ? '#F5F5F5' : '#FFFFFF',
-              color: page === totalPages ? '#999999' : '#333333',
-              cursor: page === totalPages ? 'not-allowed' : 'pointer',
-              fontSize: '14px'
+              background: (page === totalPages || totalPages === 0) ? '#F5F5F5' : '#FFFFFF',
+              color: (page === totalPages || totalPages === 0) ? '#999999' : '#2F516A',
+              cursor: (page === totalPages || totalPages === 0) ? 'not-allowed' : 'pointer',
             }}
           >
-            Selanjutnya
+            <iconify-icon icon="mdi:chevron-right" height="24" />
           </button>
         </div>
       </div>

@@ -9,12 +9,14 @@ export function middleware(request: NextRequest) {
   const protectedRoutes = [
     "/dashboard",
     "/data-inventaris",
-    "/data-peminjaman",
+    "/data-peminjam",
+    "/peminjaman",
     "/aktivitas",
     "/create-produk",
     "/create-detail-produk",
     "/api/aktivitas",
     "/api/detail-produk",
+    "/api/events",
     "/api/lokasi",
     "/api/peminjaman"
   ];
@@ -48,13 +50,15 @@ export const config = {
   matcher: [
     "/dashboard/:path*",
     "/data-inventaris/:path*",
-    "/data-peminjaman/:path*",
+    "/data-peminjam/:path*",
+    "/peminjaman/:path*",
     "/aktivitas/:path*",
     "/create-produk/:path*",
     "/create-detail-produk/:path*",
     "/login",
     "/api/aktivitas/:path*",
     "/api/detail-produk/:path*",
+    "/api/events/:path*",
     "/api/lokasi/:path*",
     "/api/peminjaman/:path*"
   ],

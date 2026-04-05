@@ -3,6 +3,8 @@ import { prisma } from "@lib/prisma";
 import { z } from "zod";
 import { logActivity } from "@/lib/activity";
 import { getCurrentSession } from "@/lib/auth";
+import { writeFile, mkdir } from "fs/promises";
+import path from "path";
 
 const detailProdukSchema = z.object({
     id_produk: z.coerce.number().int().positive(),
@@ -12,6 +14,49 @@ const detailProdukSchema = z.object({
     kode_seri: z.string().nullable().optional().or(z.literal("")),
     kode_scan: z.string().nullable().optional().or(z.literal("")),
 });
+
+/** Parse a request that may be either JSON or multipart/form-data.
+ *  Returns the validated schema data plus an optional File object. */
+async function parseRequest(request: Request) {
+    const contentType = request.headers.get("content-type") ?? "";
+
+    if (contentType.includes("multipart/form-data")) {
+        const formData = await request.formData();
+
+        const rawData = {
+            id_produk: formData.get("id_produk"),
+            id_lokasi: formData.get("id_lokasi"),
+            status: formData.get("status"),
+            kondisi: formData.get("kondisi"),
+            kode_seri: formData.get("kode_seri") ?? undefined,
+            kode_scan: formData.get("kode_scan") ?? undefined,
+        };
+
+        const fotoEntry = formData.get("foto");
+        const fotoFile = fotoEntry instanceof File && fotoEntry.size > 0 ? fotoEntry : null;
+
+        return { rawData, fotoFile };
+    } else {
+        // Fallback: plain JSON (no photo)
+        const body = await request.json();
+        return { rawData: body, fotoFile: null };
+    }
+}
+
+/** Save an uploaded file to public/uploads/detail-produk/ and return the public URL path. */
+async function saveFoto(file: File): Promise<string> {
+    const uploadDir = path.join(process.cwd(), "public", "uploads", "detail-produk");
+    await mkdir(uploadDir, { recursive: true });
+
+    const ext = file.name.split(".").pop() ?? "jpg";
+    const uniqueName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const filePath = path.join(uploadDir, uniqueName);
+
+    const buffer = Buffer.from(await file.arrayBuffer());
+    await writeFile(filePath, buffer);
+
+    return `/uploads/detail-produk/${uniqueName}`;
+}
 
 export async function GET(request: Request) {
     try {
@@ -33,7 +78,7 @@ export async function GET(request: Request) {
         }
         if (namaProdukParam) {
             whereClause.produk = {
-                nama: { contains: namaProdukParam } // Example: "Laptop" matches "Laptop Lenovo", "Laptop Asus", etc.
+                nama: { contains: namaProdukParam }
             };
         }
 
@@ -55,9 +100,9 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
     try {
-        const body = await request.json();
+        const { rawData, fotoFile } = await parseRequest(request);
 
-        const validation = detailProdukSchema.safeParse(body);
+        const validation = detailProdukSchema.safeParse(rawData);
         if (!validation.success) {
             return NextResponse.json(
                 { error: "Validation failed", details: validation.error.format() },
@@ -67,17 +112,21 @@ export async function POST(request: Request) {
 
         const { id_produk, id_lokasi, status, kondisi, kode_seri, kode_scan } = validation.data;
 
+        // Save photo if provided
+        let fotoUrl: string | null = null;
+        if (fotoFile) {
+            fotoUrl = await saveFoto(fotoFile);
+        }
+
         const detailProduk = await prisma.detailProduk.create({
             data: {
                 id_produk,
                 id_lokasi,
                 status,
                 kondisi,
-                // Convert empty strings to null for optional fields if preferred, 
-                // or keep as string if database allows. Prisma schema says String? 
-                // passing undefined/null is best for optional.
                 kode_seri: kode_seri || null,
                 kode_scan: kode_scan || null,
+                foto: fotoUrl,
             },
         });
 
@@ -120,8 +169,8 @@ export async function PUT(request: Request) {
             return NextResponse.json({ error: "Detail Product ID required" }, { status: 400 });
         }
 
-        const body = await request.json();
-        const validation = detailProdukSchema.safeParse(body);
+        const { rawData, fotoFile } = await parseRequest(request);
+        const validation = detailProdukSchema.safeParse(rawData);
 
         if (!validation.success) {
             return NextResponse.json(
@@ -132,6 +181,12 @@ export async function PUT(request: Request) {
 
         const { id_produk, id_lokasi, status, kondisi, kode_seri, kode_scan } = validation.data;
 
+        // Save new photo if provided; otherwise keep existing
+        let fotoUrl: string | undefined = undefined;
+        if (fotoFile) {
+            fotoUrl = await saveFoto(fotoFile);
+        }
+
         const detailProduk = await prisma.detailProduk.update({
             where: { id: parseInt(id) },
             data: {
@@ -141,6 +196,8 @@ export async function PUT(request: Request) {
                 kondisi,
                 kode_seri: kode_seri || null,
                 kode_scan: kode_scan || null,
+                // Only update foto if a new file was uploaded
+                ...(fotoUrl !== undefined ? { foto: fotoUrl } : {}),
             },
             include: {
                 produk: true

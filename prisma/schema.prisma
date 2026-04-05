@@ -83,6 +83,7 @@ model Pengajuan {
   tanggal_pinjam  DateTime        @default(now())
   tanggal_kembali DateTime?
   kode_resi       String // VARCHAR 12
+  foto            String?
   waktu_dibuat    DateTime        @default(now())
   waktu_diubah    DateTime        @updatedAt
   id_diubah_oleh  String?
@@ -118,6 +119,7 @@ model DetailProduk {
   kondisi        KondisiDetailProduk
   kode_seri      String?
   kode_scan      String?
+  foto           String?
   waktu_dibuat   DateTime            @default(now())
   waktu_diubah   DateTime            @updatedAt
   id_diubah_oleh String?

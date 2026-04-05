@@ -2,6 +2,23 @@ import { NextResponse } from "next/server";
 import { prisma } from "@lib/prisma";
 import { getCurrentSession } from "@/lib/auth";
 import { logActivity } from "@/lib/activity";
+import { writeFile, mkdir } from "fs/promises";
+import path from "path";
+
+/** Save an uploaded file to public/uploads/peminjaman/ and return the public URL path. */
+async function saveFoto(file: File): Promise<string> {
+    const uploadDir = path.join(process.cwd(), "public", "uploads", "peminjaman");
+    await mkdir(uploadDir, { recursive: true });
+
+    const ext = file.name.split(".").pop() ?? "jpg";
+    const uniqueName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+    const filePath = path.join(uploadDir, uniqueName);
+
+    const buffer = Buffer.from(await file.arrayBuffer());
+    await writeFile(filePath, buffer);
+
+    return `/uploads/peminjaman/${uniqueName}`;
+}
 
 export async function GET(request: Request) {
     try {
@@ -39,7 +56,14 @@ export async function GET(request: Request) {
                 peminjam: true,
                 detail_pengajuan: {
                     include: {
-                        produk: true
+                        produk: true,
+                        detail_produk_pengajuan: {
+                            include: {
+                                detail_produk: {
+                                    include: { lokasi: true }
+                                }
+                            }
+                        }
                     }
                 }
             },
@@ -67,7 +91,23 @@ export async function PUT(request: Request) {
             return NextResponse.json({ error: "ID required" }, { status: 400 });
         }
 
-        const body = await request.json();
+        const contentType = request.headers.get("content-type") ?? "";
+        let body: any;
+        let fotoFile: File | null = null;
+
+        if (contentType.includes("multipart/form-data")) {
+            const formData = await request.formData();
+            body = Object.fromEntries(
+                Array.from(formData.entries()).filter(([, v]) => !(v instanceof File))
+            );
+            // Parse nested JSON fields sent as strings
+            if (typeof body.items === "string") body.items = JSON.parse(body.items);
+            if (typeof body.quantities === "string") body.quantities = JSON.parse(body.quantities);
+            const fotoEntry = formData.get("foto");
+            fotoFile = fotoEntry instanceof File && fotoEntry.size > 0 ? fotoEntry : null;
+        } else {
+            body = await request.json();
+        }
         /* 
            Expected body for Status Update:
            { status: "DIPINJAM" | "KEMBALI" | "TERLAMBAT" | "DIAJUKAN", catatan?: string, tanggal_kembali?: Date }
@@ -85,6 +125,12 @@ export async function PUT(request: Request) {
 
         const { status, catatan, tanggal_pinjam, tanggal_kembali, items, quantities } = body;
 
+        // Save photo if uploaded
+        let fotoUrl: string | undefined = undefined;
+        if (fotoFile) {
+            fotoUrl = await saveFoto(fotoFile);
+        }
+
         // Transaction handling for updates and item linking
         const result = await prisma.$transaction(async (tx) => {
             // 1. Update Pengajuan details
@@ -95,6 +141,7 @@ export async function PUT(request: Request) {
                     catatan,
                     tanggal_pinjam: tanggal_pinjam ? new Date(tanggal_pinjam) : undefined,
                     tanggal_kembali: tanggal_kembali ? new Date(tanggal_kembali) : undefined,
+                    ...(fotoUrl !== undefined ? { foto: fotoUrl } : {}),
                 },
                 include: {
                     peminjam: true
@@ -166,60 +213,67 @@ export async function PUT(request: Request) {
 
             // 4. Handle Return (Pengembalian)
             if (status === 'KEMBALI') {
-                const { location_name, condition, id_lokasi } = body;
-                if ((id_lokasi || location_name) && condition) {
-                    let lokasiId = id_lokasi;
+                const { itemConditions, location_name, condition, id_lokasi } = body;
+                
+                let lokasiId = id_lokasi;
 
-                    // If no ID provided but name is present, try to find or create
-                    if (!lokasiId && location_name) {
-                        let lokasi = await tx.lokasi.findFirst({
-                            where: { nama_ruang: location_name }
+                // If no ID provided but name is present, try to find or create
+                if (!lokasiId && location_name) {
+                    let lokasi = await tx.lokasi.findFirst({
+                        where: { nama_ruang: location_name }
+                    });
+
+                    if (!lokasi) {
+                        lokasi = await tx.lokasi.create({
+                            data: {
+                                nama_ruang: location_name,
+                                keterangan: 'Lokasi Pengembalian',
+                            }
                         });
+                    }
+                    lokasiId = lokasi.id;
+                }
 
-                        if (!lokasi) {
-                            lokasi = await tx.lokasi.create({
-                                data: {
-                                    nama_ruang: location_name,
-                                    keterangan: 'Lokasi Pengembalian',
-                                }
-                            });
-                        }
-                        lokasiId = lokasi.id;
+                const detailPengajuanIds = await tx.detailPengajuan.findMany({
+                    where: { id_pengajuan: id },
+                    select: { id: true }
+                }).then(res => res.map(r => r.id));
+
+                const detailProdukPengajuan = await tx.detailProdukPengajuan.findMany({
+                    where: { id_detail_pengajuan: { in: detailPengajuanIds } }
+                });
+
+                for (const dpp of detailProdukPengajuan) {
+                    let itemCondition = 'BAIK';
+                    if (itemConditions && typeof itemConditions === 'object' && itemConditions[dpp.id_detail_produk]) {
+                        itemCondition = itemConditions[dpp.id_detail_produk];
+                    } else if (condition) {
+                        itemCondition = condition;
+                    }
+                    
+                    const updateData: any = {
+                        status: 'TERSEDIA',
+                        kondisi: itemCondition
+                    };
+                    if (lokasiId) {
+                        updateData.id_lokasi = lokasiId;
                     }
 
-                    if (lokasiId) {
-                        // Update all related detail products
-                        const detailPengajuanIds = await tx.detailPengajuan.findMany({
-                            where: { id_pengajuan: id },
-                            select: { id: true }
-                        }).then(res => res.map(r => r.id));
+                    const updatedDetailProduk = await tx.detailProduk.update({
+                        where: { id: dpp.id_detail_produk },
+                        data: updateData,
+                        include: { produk: true }
+                    });
 
-                        const detailProdukPengajuan = await tx.detailProdukPengajuan.findMany({
-                            where: { id_detail_pengajuan: { in: detailPengajuanIds } }
-                        });
-
-                        for (const dpp of detailProdukPengajuan) {
-                            const updatedDetailProduk = await tx.detailProduk.update({
-                                where: { id: dpp.id_detail_produk },
-                                data: {
-                                    status: 'TERSEDIA',
-                                    kondisi: condition,
-                                    id_lokasi: lokasiId
-                                },
-                                include: { produk: true }
-                            });
-
-                            // Log Activity for Detail Produk return
-                            const session = await getCurrentSession();
-                            if (session) {
-                                await logActivity(
-                                    tx as any,
-                                    "Ubah, Detail Produk",
-                                    `Detail Produk ${updatedDetailProduk.produk.nama} (ID: ${updatedDetailProduk.id}) dikembalikan oleh ${updatedPengajuan.peminjam.nama} dengan kondisi ${condition}`,
-                                    session.id_admin
-                                );
-                            }
-                        }
+                    // Log Activity for Detail Produk return
+                    const session = await getCurrentSession();
+                    if (session) {
+                        await logActivity(
+                            tx as any,
+                            "Ubah, Detail Produk",
+                            `Detail Produk ${updatedDetailProduk.produk.nama} (ID: ${updatedDetailProduk.id}) dikembalikan oleh ${updatedPengajuan.peminjam.nama} dengan kondisi ${itemCondition}`,
+                            session.id_admin
+                        );
                     }
                 }
             }

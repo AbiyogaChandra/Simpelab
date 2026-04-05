@@ -31,6 +31,7 @@ interface Pengajuan {
   catatan?: string;
   tanggal_pinjam: string;
   tanggal_kembali: string | null;
+  foto?: string;
   peminjam: Peminjam;
   detail_pengajuan: DetailPengajuan[];
 }
@@ -69,14 +70,7 @@ export default function DataPeminjamanPage() {
   // Return modal state (kept for future implementation/UI consistency)
   const [returnModalOpen, setReturnModalOpen] = useState(false);
   const [selectedPengajuanReturn, setSelectedPengajuanReturn] = useState<Pengajuan | null>(null);
-  const [kondisiBarang, setKondisiBarang] = useState('BAIK');
-
-  // Location Autofill State
-  const [lokasiList, setLokasiList] = useState<any[]>([]);
-  const [lokasiSearchQuery, setLokasiSearchQuery] = useState('');
-  const [showLokasiDropdown, setShowLokasiDropdown] = useState(false);
-  const [selectedRuang, setSelectedRuang] = useState<string | null>(null);
-  const [selectedLokasiId, setSelectedLokasiId] = useState<number | null>(null);
+  const [kondisiBarang, setKondisiBarang] = useState<Record<number, string>>({});
 
 
 
@@ -97,93 +91,8 @@ export default function DataPeminjamanPage() {
 
   useEffect(() => {
     fetchPeminjaman();
-    fetchLokasi();
   }, []);
 
-  const fetchLokasi = async () => {
-    try {
-      const res = await fetch('/api/lokasi');
-      if (res.ok) {
-        const data = await res.json();
-        setLokasiList(data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch lokasi:', error);
-    }
-  };
-
-  // Location Filtering Logic
-  const filteredLokasi = (() => {
-    if (!selectedRuang) {
-      const uniqueRuangs = Array.from(new Set(lokasiList.map(l => l.nama_ruang)));
-      return uniqueRuangs
-        .filter(ruang => ruang.toLowerCase().includes(lokasiSearchQuery.toLowerCase()))
-        .map(ruang => ({ type: 'ruang', value: ruang }));
-    } else {
-      return lokasiList
-        .filter(l => l.nama_ruang === selectedRuang)
-        .filter(l => l.keterangan.toLowerCase().includes(lokasiSearchQuery.toLowerCase()))
-        .map(l => ({ type: 'lokasi', value: l }));
-    }
-  })();
-
-  const createNewLocation = async (ruang: string, keterangan: string) => {
-    try {
-      const response = await fetch('/api/lokasi', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nama_ruang: ruang, keterangan }),
-      });
-
-      if (!response.ok) throw new Error('Failed to create location');
-
-      const newLokasi = await response.json();
-      setLokasiList(prev => [...prev, newLokasi]);
-      setSelectedLokasiId(newLokasi.id);
-      setLokasiSearchQuery(newLokasi.keterangan);
-      setShowLokasiDropdown(false);
-    } catch (error) {
-      console.error('Error creating location:', error);
-      alert('Gagal membuat lokasi baru');
-    }
-  };
-
-  const handleSelectLokasiItem = async (item: any) => {
-    if (item.type === 'ruang') {
-      setSelectedRuang(item.value);
-      setLokasiSearchQuery('');
-      setShowLokasiDropdown(true);
-    } else if (item.type === 'lokasi') {
-      const lokasi = item.value;
-      setSelectedLokasiId(lokasi.id);
-      setLokasiSearchQuery(''); // Just show selected state
-      setShowLokasiDropdown(false);
-    } else if (item.type === 'new_ruang') {
-      setSelectedRuang(lokasiSearchQuery);
-      setLokasiSearchQuery('');
-      setShowLokasiDropdown(true);
-    } else if (item.type === 'new_lokasi') {
-      await createNewLocation(selectedRuang!, lokasiSearchQuery);
-      setLokasiSearchQuery('');
-    }
-  };
-
-  const handleClearLokasi = () => {
-    setSelectedLokasiId(null);
-    setLokasiSearchQuery('');
-    setShowLokasiDropdown(true);
-  };
-
-  const handleClearRuang = () => {
-    setSelectedRuang(null);
-    setLokasiSearchQuery('');
-    setSelectedLokasiId(null);
-    setShowLokasiDropdown(true);
-  };
-
-  const selectedKeterangan = selectedLokasiId
-    ? lokasiList.find(l => l.id === selectedLokasiId)?.keterangan
-    : null;
 
   const handleTolak = async (id: string) => {
     if (!confirm('Apakah anda yakin ingin menolak pengajuan ini? Data akan dihapus permanen.')) return;
@@ -202,8 +111,7 @@ export default function DataPeminjamanPage() {
   };
 
   const handleConfirmReturn = async () => {
-    if (!selectedPengajuanReturn || (!selectedLokasiId && !lokasiSearchQuery && !selectedRuang)) {
-      alert('Mohon isi letak barang');
+    if (!selectedPengajuanReturn) {
       return;
     }
 
@@ -213,20 +121,14 @@ export default function DataPeminjamanPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           status: 'KEMBALI',
-          condition: kondisiBarang,
-          // If we have an ID, send it. If not, try to construct a name from Ruang + Query (fallback)
-          id_lokasi: selectedLokasiId,
-          location_name: selectedLokasiId ? undefined : (selectedRuang || lokasiSearchQuery)
+          itemConditions: kondisiBarang
         })
       });
 
       if (res.ok) {
         setReturnModalOpen(false);
         setSelectedPengajuanReturn(null);
-        // Reset Location State
-        setSelectedLokasiId(null);
-        setSelectedRuang(null);
-        setLokasiSearchQuery('');
+        setKondisiBarang({});
 
         fetchPeminjaman();
       } else {
@@ -386,27 +288,7 @@ export default function DataPeminjamanPage() {
               pointerEvents: 'none',
             }}
           >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 16 16"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <circle
-                cx="7"
-                cy="7"
-                r="5"
-                stroke="#666666"
-                strokeWidth="1.5"
-              />
-              <path
-                d="M11 11L14 14"
-                stroke="#666666"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-              />
-            </svg>
+            <iconify-icon icon="mdi:magnify" style={{ color: '#666666', fontSize: '16px' }}></iconify-icon>
           </div>
         </div>
 
@@ -425,8 +307,13 @@ export default function DataPeminjamanPage() {
                 padding: '48px',
                 textAlign: 'center',
                 color: '#666666',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                gap: '8px'
               }}
             >
+              <iconify-icon icon="line-md:loading-twotone-loop" style={{ fontSize: '24px', color: '#2F516A' }}></iconify-icon>
               Memuat data peminjaman...
             </div>
           ) : filteredList.length === 0 ? (
@@ -649,7 +536,7 @@ export default function DataPeminjamanPage() {
                             {p.status === 'DIAJUKAN' && (
                               <>
                                 <Link
-                                  href={`/data-peminjaman/proses/${p.id}`}
+                                  href={`/peminjaman/proses/${p.id}`}
                                   title="Proses Peminjaman"
                                   style={{
                                     width: '32px',
@@ -664,21 +551,7 @@ export default function DataPeminjamanPage() {
                                     textDecoration: 'none',
                                   }}
                                 >
-                                  <svg
-                                    width="14"
-                                    height="14"
-                                    viewBox="0 0 16 16"
-                                    fill="none"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                  >
-                                    <path
-                                      d="M13 4L6 11L3 8"
-                                      stroke="#666666"
-                                      strokeWidth="2"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                    />
-                                  </svg>
+                                  <iconify-icon icon="mdi:arrow-right" style={{ color: '#666666', fontSize: '16px' }}></iconify-icon>
                                 </Link>
                                 <button
                                   type="button"
@@ -696,20 +569,7 @@ export default function DataPeminjamanPage() {
                                     justifyContent: 'center',
                                   }}
                                 >
-                                  <svg
-                                    width="14"
-                                    height="14"
-                                    viewBox="0 0 16 16"
-                                    fill="none"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                  >
-                                    <path
-                                      d="M12 4L4 12M4 4l8 8"
-                                      stroke="#666666"
-                                      strokeWidth="2"
-                                      strokeLinecap="round"
-                                    />
-                                  </svg>
+                                  <iconify-icon icon="mdi:close" style={{ color: '#666666', fontSize: '16px' }}></iconify-icon>
                                 </button>
                               </>
                             )}
@@ -720,11 +580,13 @@ export default function DataPeminjamanPage() {
                                 title="Pengembalian Barang"
                                 onClick={() => {
                                   setSelectedPengajuanReturn(p);
-                                  setKondisiBarang('BAIK');
-                                  // Reset Location State
-                                  setSelectedLokasiId(null);
-                                  setSelectedRuang(null);
-                                  setLokasiSearchQuery('');
+                                  const initConds: Record<number, string> = {};
+                                  p.detail_pengajuan?.forEach((dp: any) => {
+                                    dp.detail_produk_pengajuan?.forEach((dpp: any) => {
+                                      initConds[dpp.id_detail_produk] = 'BAIK';
+                                    });
+                                  });
+                                  setKondisiBarang(initConds);
                                   setReturnModalOpen(true);
                                 }}
                                 style={{
@@ -739,21 +601,7 @@ export default function DataPeminjamanPage() {
                                   justifyContent: 'center',
                                 }}
                               >
-                                <svg
-                                  width="14"
-                                  height="14"
-                                  viewBox="0 0 16 16"
-                                  fill="none"
-                                  xmlns="http://www.w3.org/2000/svg"
-                                >
-                                  <path
-                                    d="M6 12L2 8l4-4M2 8h9a2 2 0 012 2v1"
-                                    stroke="#666666"
-                                    strokeWidth="1.5"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                  />
-                                </svg>
+                                <iconify-icon icon="mdi:keyboard-return" style={{ color: '#666666', fontSize: '16px' }}></iconify-icon>
                               </button>
                             )}
                           </div>
@@ -822,277 +670,84 @@ export default function DataPeminjamanPage() {
               </p>
             </div>
 
-            {/* Preview Invoice */}
+            {/* Preview Invoice Document */}
             <div
               style={{
                 background: '#F5F5F5',
                 borderRadius: '12px',
-                minHeight: '200px',
+                height: '400px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 marginBottom: '24px',
+                overflow: 'hidden',
+                border: '1px solid #E0E0E0'
               }}
             >
-              <span style={{ color: '#9CA3AF', fontSize: '16px', fontWeight: 500 }}>
-                Preview Invoice
-              </span>
+              {selectedPengajuanReturn ? (
+                <iframe
+                  src={`/api/cetak/${selectedPengajuanReturn.id}`}
+                  style={{ width: '100%', height: '100%', border: 'none' }}
+                  title="Cetak Invoice Preview"
+                />
+              ) : (
+                <span style={{ color: '#9CA3AF', fontSize: '16px', fontWeight: 500 }}>
+                  Tidak dapat memuat invoice
+                </span>
+              )}
             </div>
 
-            {/* Kondisi barang */}
-            <div style={{ marginBottom: '20px' }}>
+            {/* Individual Item Conditions & Check */}
+            <div style={{ marginBottom: '24px', maxHeight: '30vh', overflowY: 'auto' }}>
               <label
                 style={{
                   display: 'block',
                   color: '#333333',
                   fontSize: '14px',
                   fontWeight: 600,
-                  marginBottom: '8px',
+                  marginBottom: '12px',
                 }}
               >
-                Kondisi barang
-              </label>
-              <div style={{ position: 'relative' }}>
-                <select
-                  value={kondisiBarang}
-                  onChange={(e) => setKondisiBarang(e.target.value)}
-                  style={{
-                    width: '100%',
-                    padding: '12px 40px 12px 16px',
-                    border: '1px solid #E0E0E0',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    color: '#333333',
-                    background: '#FFFFFF',
-                    appearance: 'none',
-                    fontFamily: 'inherit',
-                    outline: 'none',
-                  }}
-                >
-                  <option value="BAIK">Baik</option>
-                  <option value="RUSAK">Rusak</option>
-                </select>
-                <div
-                  style={{
-                    position: 'absolute',
-                    right: '12px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    pointerEvents: 'none',
-                  }}
-                >
-                  <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M1 1L6 6L11 1" stroke="#666666" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </div>
-              </div>
-            </div>
-
-            {/* Letak */}
-            <div style={{ marginBottom: '24px' }}>
-              <label
-                style={{
-                  display: 'block',
-                  color: '#333333',
-                  fontSize: '14px',
-                  fontWeight: 600,
-                  marginBottom: '8px',
-                }}
-              >
-                Letak
+                Kondisi Pengembalian Masing-Masing Barang
               </label>
 
-              <div style={{ position: 'relative' }}>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  border: '1px solid #E0E0E0',
-                  borderRadius: '8px',
-                  background: '#FFFFFF',
-                  padding: '8px 12px',
-                  gap: '8px'
-                }}>
-                  {/* Chip for Selected Ruang */}
-                  {selectedRuang && (
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      background: '#ECEFF1',
-                      borderRadius: '16px',
-                      padding: '4px 12px',
-                      gap: '8px',
-                      width: 'auto',
-                      minWidth: '100px',
-                      maxWidth: '45%'
-                    }}>
-                      <span style={{
-                        fontSize: '12px',
-                        fontWeight: 500,
-                        color: '#333333',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        flex: 1
-                      }}>
-                        {selectedRuang}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={handleClearRuang}
-                        style={{
-                          border: 'none',
-                          color: '#1E1E1E',
-                          cursor: 'pointer',
-                          padding: 0,
-                          display: 'flex',
-                          alignItems: 'center',
-                          background: 'transparent'
-                        }}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M18 6L6 18M6 6l12 12" stroke="#666666" strokeWidth="2" strokeLinecap="round" />
-                        </svg>
-                      </button>
-                    </div>
-                  )}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {selectedPengajuanReturn?.detail_pengajuan?.flatMap((dp: any) => 
+                  dp.detail_produk_pengajuan?.map((dpp: any) => {
+                    const productId = dpp.id_detail_produk;
+                    const lokasi = dpp.detail_produk?.lokasi;
+                    const locationText = lokasi ? `${lokasi.nama_ruang} - ${lokasi.keterangan}` : '-';
 
-                  {/* Chip for Selected Keterangan (Lokasi) */}
-                  {selectedKeterangan && (
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      background: '#E0F2F1', // Greenish tint
-                      borderRadius: '16px',
-                      padding: '4px 12px',
-                      gap: '6px',
-                      width: 'auto',
-                      minWidth: '100px',
-                      maxWidth: '45%'
-                    }}>
-                      <span style={{
-                        fontSize: '12px',
-                        fontWeight: 500,
-                        color: '#00695C',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis',
-                        flex: 1
-                      }}>
-                        {selectedKeterangan}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={handleClearLokasi}
-                        style={{
-                          border: 'none',
-                          background: 'transparent',
-                          color: '#1E1E1E',
-                          cursor: 'pointer',
-                          padding: 0,
-                          display: 'flex',
-                          alignItems: 'center'
-                        }}
-                      >
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                          <path d="M18 6L6 18M6 6l12 12" stroke="#666666" strokeWidth="2" strokeLinecap="round" />
-                        </svg>
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Input Field - Hide if Keterangan is selected */}
-                  {!selectedKeterangan && (
-                    <input
-                      type="text"
-                      value={lokasiSearchQuery}
-                      onChange={(e) => {
-                        setLokasiSearchQuery(e.target.value);
-                        setShowLokasiDropdown(true);
-                      }}
-                      onFocus={() => setShowLokasiDropdown(true)}
-                      onBlur={() => setTimeout(() => setShowLokasiDropdown(false), 200)}
-                      placeholder={selectedRuang ? "Ketik keterangan spesifik..." : "Pilih Ruangan"}
-                      style={{
-                        border: 'none',
-                        outline: 'none',
-                        width: '100%',
-                        fontSize: '14px',
-                        color: lokasiSearchQuery ? '#000000' : '#999999',
-                        fontFamily: 'inherit',
-                        flex: 1
-                      }}
-                    />
-                  )}
-                </div>
-
-                {/* Lokasi Dropdown */}
-                {showLokasiDropdown && (
-                  <div style={{
-                    position: 'absolute',
-                    top: '100%',
-                    left: 0,
-                    right: 0,
-                    marginTop: '4px',
-                    background: '#FFFFFF',
-                    borderRadius: '8px',
-                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-                    border: '1px solid #F3F4F6',
-                    maxHeight: '200px',
-                    overflowY: 'auto',
-                    zIndex: 20
-                  }}>
-                    {filteredLokasi.map((item, index) => (
-                      <div
-                        key={index}
-                        onClick={() => handleSelectLokasiItem(item)}
-                        style={{
-                          padding: '12px 16px',
-                          cursor: 'pointer',
-                          fontSize: '14px',
-                          color: '#333333',
-                          borderBottom: '1px solid #F9FAFB'
-                        }}
-                        onMouseEnter={(e) => { e.currentTarget.style.background = '#F9FAFB'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.background = '#FFFFFF'; }}
-                      >
-                        {item.type === 'ruang' ? (item.value as string) : (item.value as any).keterangan}
+                    return (
+                      <div key={productId} style={{ padding: '12px', border: '1px solid #E0E0E0', borderRadius: '8px', background: '#FAFAFA' }}>
+                        <div style={{ marginBottom: '8px', fontSize: '14px', fontWeight: 600, color: '#333333' }}>
+                          {dp.produk?.nama} - {dpp.detail_produk?.kode_scan || dpp.detail_produk?.kode_seri || `ID: ${productId}`}
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
+                           <div style={{ fontSize: '12px', color: '#666666' }}>
+                              Kembalikan ke Letak: <strong>{locationText}</strong>
+                           </div>
+                           <select
+                             value={kondisiBarang[productId] || 'BAIK'}
+                             onChange={(e) => setKondisiBarang(prev => ({ ...prev, [productId]: e.target.value }))}
+                             style={{
+                               padding: '8px 12px',
+                               border: '1px solid #E0E0E0',
+                               borderRadius: '6px',
+                               fontSize: '13px',
+                               background: '#FFFFFF',
+                               outline: 'none',
+                               flexShrink: 0,
+                               width: '120px'
+                             }}
+                           >
+                             <option value="BAIK">Baik</option>
+                             <option value="RUSAK">Rusak</option>
+                           </select>
+                        </div>
                       </div>
-                    ))}
-
-                    {!selectedRuang && !filteredLokasi.some(i => i.type === 'ruang' && i.value === lokasiSearchQuery) && lokasiSearchQuery && (
-                      <div
-                        onClick={() => handleSelectLokasiItem({ type: 'new_ruang' })}
-                        style={{
-                          padding: '12px 16px',
-                          cursor: 'pointer',
-                          fontSize: '14px',
-                          color: '#2F516A',
-                          fontWeight: 500,
-                          borderTop: '1px solid #F3F4F6'
-                        }}
-                      >
-                        + Tambahkan ruang baru "{lokasiSearchQuery}"
-                      </div>
-                    )}
-
-                    {selectedRuang && !filteredLokasi.some(i => i.type === 'lokasi' && (i.value as any).keterangan === lokasiSearchQuery) && lokasiSearchQuery && (
-                      <div
-                        onClick={() => handleSelectLokasiItem({ type: 'new_lokasi' })}
-                        style={{
-                          padding: '12px 16px',
-                          cursor: 'pointer',
-                          fontSize: '14px',
-                          color: '#2F516A',
-                          fontWeight: 500,
-                          borderTop: '1px solid #F3F4F6'
-                        }}
-                      >
-                        + Tambahkan lokasi baru di {selectedRuang} "{lokasiSearchQuery}"
-                      </div>
-                    )}
-                  </div>
+                    );
+                  })
                 )}
               </div>
             </div>

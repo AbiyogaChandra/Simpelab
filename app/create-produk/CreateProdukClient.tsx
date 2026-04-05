@@ -11,48 +11,58 @@ function CreateProdukContent() {
   const id = searchParams.get('id');
   const isEditing = !!id;
 
-  const [formData, setFormData] = useState({
+  const initialEmptyData = {
     kategoriProduk: '',
     namaProduk: '',
     kodeProduk: '',
     merk: '',
     tipeModel: '',
     spesifikasi: '',
-  });
+  };
+
+  const [formData, setFormData] = useState(initialEmptyData);
+  const [initialFormData, setInitialFormData] = useState(initialEmptyData);
 
   const [isLoading, setIsLoading] = useState(false);
 
+  const [produkList, setProdukList] = useState<any[]>([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+
   useEffect(() => {
-    if (isEditing) {
-      const fetchProduk = async () => {
-        try {
-          // Fetch all products to find the one we need (simpler given current API structure)
-          // Ideally API should support GET /api/produk?id=...
-          // But our GET /api/produk returns list. Let's filter client side or update API later if needed.
-          // UPDATE: Actually let's just fetch the list and find it, or we could ask to update GET to support ID.
-          // For now, let's just fetch all and filter.
-          const response = await fetch('/api/produk');
-          if (response.ok) {
-            const data = await response.json();
+    const fetchProduk = async () => {
+      try {
+        const response = await fetch('/api/produk');
+        if (response.ok) {
+          const data = await response.json();
+          setProdukList(data);
+
+          if (isEditing && id) {
             const produk = data.find((p: any) => p.id === parseInt(id));
             if (produk) {
-              setFormData({
+              const loadedData = {
                 kategoriProduk: produk.kategori === 'ASET' ? 'aset' : 'hp',
                 namaProduk: produk.nama,
                 kodeProduk: produk.kode,
                 merk: produk.merk,
                 tipeModel: produk.model,
                 spesifikasi: produk.spesifikasi,
-              });
+              };
+              setFormData(loadedData);
+              setInitialFormData(loadedData);
             }
           }
-        } catch (error) {
-          console.error("Error fetching product:", error);
         }
-      };
-      fetchProduk();
-    }
+      } catch (error) {
+        console.error("Error fetching product:", error);
+      }
+    };
+    fetchProduk();
   }, [isEditing, id]);
+
+  const uniqueNama = Array.from(new Set(produkList.map(p => p.nama)));
+  const filteredNamaProduk = formData.namaProduk 
+      ? uniqueNama.filter(name => typeof name === 'string' && name.toLowerCase().includes(formData.namaProduk.toLowerCase()))
+      : uniqueNama;
 
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -129,14 +139,11 @@ function CreateProdukContent() {
   };
 
   const handleReset = () => {
-    setFormData({
-      kategoriProduk: '',
-      namaProduk: '',
-      kodeProduk: '',
-      merk: '',
-      tipeModel: '',
-      spesifikasi: '',
-    });
+    if (isEditing) {
+      setFormData(initialFormData);
+    } else {
+      setFormData(initialEmptyData);
+    }
   };
 
   return (
@@ -289,23 +296,65 @@ function CreateProdukContent() {
                 }}>
                   Nama Produk
                 </label>
-                <input
-                  type="text"
-                  name="namaProduk"
-                  value={formData.namaProduk}
-                  onChange={handleChange}
-                  placeholder="Contoh : Flashdisk"
-                  style={{
-                    width: '100%',
-                    padding: '12px 16px',
-                    border: '1px solid #E0E0E0',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    color: formData.namaProduk ? '#000000' : '#999999',
-                    background: '#FFFFFF',
-                    fontFamily: 'inherit'
-                  }}
-                />
+                <div style={{ position: 'relative' }}>
+                  <input
+                    type="text"
+                    name="namaProduk"
+                    value={formData.namaProduk}
+                    onChange={handleChange}
+                    onFocus={() => setShowDropdown(true)}
+                    onBlur={() => setTimeout(() => setShowDropdown(false), 200)}
+                    placeholder="Contoh : Flashdisk"
+                    style={{
+                      width: '100%',
+                      padding: '12px 16px',
+                      border: '1px solid #E0E0E0',
+                      borderRadius: '8px',
+                      fontSize: '14px',
+                      color: formData.namaProduk ? '#000000' : '#999999',
+                      background: '#FFFFFF',
+                      fontFamily: 'inherit'
+                    }}
+                  />
+                  {/* Combobox Suggestions Dropdown */}
+                  {showDropdown && filteredNamaProduk.length > 0 && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      right: 0,
+                      marginTop: '4px',
+                      background: '#FFFFFF',
+                      borderRadius: '8px',
+                      boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                      border: '1px solid #F3F4F6',
+                      maxHeight: '200px',
+                      overflowY: 'auto',
+                      zIndex: 20
+                    }}>
+                      {filteredNamaProduk.map((namaItem: any) => (
+                        <div
+                          key={namaItem}
+                          onClick={() => {
+                            setFormData({ ...formData, namaProduk: namaItem });
+                            setShowDropdown(false);
+                          }}
+                          style={{
+                            padding: '12px 16px',
+                            cursor: 'pointer',
+                            fontSize: '14px',
+                            color: '#333333',
+                            borderBottom: '1px solid #F9FAFB'
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = '#F9FAFB'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = '#FFFFFF'; }}
+                        >
+                          {namaItem}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Kode Produk */}

@@ -26,6 +26,19 @@ export async function GET(request: Request) {
             ];
         }
 
+        const startDate = searchParams.get('startDate');
+        const endDate = searchParams.get('endDate');
+
+        if (startDate || endDate) {
+            whereClause.waktu = {};
+            if (startDate) {
+                whereClause.waktu.gte = new Date(`${startDate}T00:00:00.000Z`);
+            }
+            if (endDate) {
+                whereClause.waktu.lte = new Date(`${endDate}T23:59:59.999Z`);
+            }
+        }
+
         const page = parseInt(searchParams.get('page') || '1');
         const limit = parseInt(searchParams.get('limit') || '20');
         const skip = (page - 1) * limit;

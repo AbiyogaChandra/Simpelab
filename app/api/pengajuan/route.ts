@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@lib/prisma";
 import { z } from "zod";
 import { logActivity } from "@/lib/activity";
+import { eventEmitter } from "@/lib/events";
 
 const createPengajuanSchema = z.object({
   id_peminjam: z.string().uuid(),
@@ -172,6 +173,8 @@ export async function POST(request: Request) {
 
       return newPengajuan;
     });
+
+    eventEmitter.emit("peminjaman_update", { type: "NEW_PENGAJUAN", title: "Peminjaman Baru", message: `Ada pengajuan peminjaman dari ${peminjamData.nama}` });
 
     return NextResponse.json(pengajuan, { status: 201 });
   } catch (error: any) {

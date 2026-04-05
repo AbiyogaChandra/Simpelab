@@ -1,6 +1,7 @@
 import IconifyRegistry from "@/components/IconifyRegistry";
 import type { Metadata } from "next";
 import { Outfit } from "next/font/google";
+import ScrollbarWrapper from "@/components/ScrollbarWrapper";
 import "./globals.css";
 
 const outfit = Outfit({
@@ -26,6 +27,7 @@ export default function RootLayout({
   return (
     <html lang="id">
       <body className={outfit.className}>
+        <ScrollbarWrapper />
         <IconifyRegistry />
         {children}
       </body>

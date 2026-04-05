@@ -3,9 +3,27 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
+import { useEffect, useState } from 'react';
 
 export default function Sidebar() {
     const pathname = usePathname();
+    const [toast, setToast] = useState<{title: string, message: string} | null>(null);
+
+    useEffect(() => {
+        const eventSource = new EventSource('/api/events');
+        eventSource.onmessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'NEW_PENGAJUAN') {
+                    setToast({ title: data.title, message: data.message });
+                    setTimeout(() => setToast(null), 5000);
+                }
+            } catch (err) {
+                console.error("Error parsing SSE:", err);
+            }
+        };
+        return () => eventSource.close();
+    }, []);
 
     const isActive = (path: string, extraPaths?: string[]) => {
         if (path === '/' && pathname === '/') return true;
@@ -37,8 +55,18 @@ export default function Sidebar() {
             )
         },
         {
+            name: 'Data Peminjam',
+            path: '/data-peminjam',
+            icon: (active: boolean) => (
+                <iconify-icon
+                    icon="fluent:people-community-24-filled"
+                    height="24"
+                />
+            )
+        },
+        {
             name: 'Peminjaman',
-            path: '/data-peminjaman',
+            path: '/peminjaman',
             icon: (active: boolean) => (
                 <iconify-icon
                     icon="icon-park-solid:transaction"
@@ -117,6 +145,19 @@ export default function Sidebar() {
                     </span>
                 </div>
             </div>
+
+            {/* Toast Notification */}
+            {toast && (
+                <div style={{ position: 'fixed', top: '24px', right: '24px', backgroundColor: '#FFFFFF', borderLeft: '4px solid #2F516A', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', borderRadius: '8px', padding: '16px', zIndex: 1000, display: 'flex', flexDirection: 'column', gap: '4px', width: '320px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontWeight: 700, color: '#333333', fontSize: '14px' }}>{toast.title}</span>
+                        <button onClick={() => setToast(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#999999' }}>
+                            <iconify-icon icon="mdi:close" height="16" />
+                        </button>
+                    </div>
+                    <span style={{ color: '#666666', fontSize: '14px' }}>{toast.message}</span>
+                </div>
+            )}
         </div>
     );
 }

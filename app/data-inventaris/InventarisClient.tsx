@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import * as XLSX from 'xlsx';
 import Link from 'next/link';
 import Sidebar from '@/components/Sidebar';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import QRCode from "react-qr-code";
 
 // Interfaces based on Prisma schema and API response
@@ -27,6 +28,7 @@ interface DetailProduk {
   kondisi: string;
   kode_seri: string | null;
   kode_scan: string | null;
+  foto: string | null;
   produk: Produk;
   lokasi: {
     id: number;
@@ -37,18 +39,107 @@ interface DetailProduk {
 
 export default function DataInventarisPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedDetail, setSelectedDetail] = useState<DetailProduk | null>(null);
 
   const [kategori, setKategori] = useState('');
   const [search, setSearch] = useState('');
-  const [activeTab, setActiveTab] = useState<'produk' | 'barang'>('produk');
+
+  // Tab state is driven by the URL `?tab=` param so the browser back button works
+  const tabParam = searchParams.get('tab');
+  const activeTab: 'produk' | 'barang' = tabParam === 'barang' ? 'barang' : 'produk';
+  const setActiveTab = (tab: 'produk' | 'barang') => {
+    router.push(`/data-inventaris?tab=${tab}`, { scroll: false });
+  };
+
   const [inventoryData, setInventoryData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Pagination State
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
+
+  // Relative Scroll Memory
+  const relativeScrollRef = useRef(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollHeight = document.body.scrollHeight - window.innerHeight;
+      if (scrollHeight > 0) {
+        relativeScrollRef.current = window.scrollY / scrollHeight;
+      }
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+
+  // Upload state
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    const reader = new FileReader();
+
+    reader.onload = async (evt) => {
+      try {
+        const bstr = evt.target?.result;
+        const wb = XLSX.read(bstr, { type: 'binary' });
+        const wsname = wb.SheetNames[0];
+        const ws = wb.Sheets[wsname];
+        const data = XLSX.utils.sheet_to_json<any>(ws);
+
+        // Map column names flexibly
+        const mappedData = data.map((row: any) => ({
+          kategori: row['Kategori'] || row['kategori'],
+          nama: row['Nama'] || row['nama'],
+          kode: row['Kode'] || row['kode'],
+          merk: row['Merk'] || row['merk'],
+          model: row['Model'] || row['model'] || '',
+          spesifikasi: row['Spesifikasi'] || row['spesifikasi'] || '',
+          kuantitas: parseInt(row['Kuantitas'] || row['kuantitas'] || '0'),
+          ruang: row['Lokasi Ruang'] || row['ruang'],
+          keterangan: row['Lokasi Keterangan'] || row['keterangan']
+        })).filter(r => r.kategori && r.nama && r.kode && r.merk && r.kuantitas > 0 && r.ruang && r.keterangan);
+
+        if (mappedData.length === 0) {
+          alert('Format data tidak valid. Pastikan semua kolom wajib diisi (Kategori, Nama, Kode, Merk, Kuantitas, Lokasi Ruang, Lokasi Keterangan).');
+          setUploading(false);
+          return;
+        }
+
+        const res = await fetch('/api/produk/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(mappedData)
+        });
+
+        if (res.ok) {
+          const result = await res.json();
+          alert(`Berhasil import ${result.imported_products} produk dan ${result.imported_details} detail barang.`);
+          // Refresh list
+          const fetchEndpoint = activeTab === 'produk' ? '/api/produk' : '/api/detail-produk';
+          const freshRes = await fetch(fetchEndpoint);
+          const freshData = await freshRes.json();
+          setInventoryData(freshData);
+        } else {
+          alert('Terjadi kesalahan saat import data server.');
+        }
+      } catch (err: any) {
+        console.error(err);
+        alert('Gagal memproses file xlsx/csv. Pastikan format sesuai.');
+      } finally {
+        setUploading(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      }
+    };
+    reader.readAsBinaryString(file);
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -160,6 +251,14 @@ export default function DataInventarisPage() {
   const endIndex = startIndex + itemsPerPage;
   const paginatedData = filteredData.slice(startIndex, endIndex);
 
+  // Apply relative scroll after DOM calculates new heights
+  useEffect(() => {
+    const scrollHeight = document.body.scrollHeight - window.innerHeight;
+    if (scrollHeight > 0) {
+      window.scrollTo(0, relativeScrollRef.current * scrollHeight);
+    }
+  }, [paginatedData, activeTab]);
+
   return (
     <div style={{
       minHeight: '100vh',
@@ -196,7 +295,7 @@ export default function DataInventarisPage() {
         </div>
 
         {/* Controls Row */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '16px', marginBottom: '24px' }}>
           {/* Tabs */}
           <div style={{ display: 'flex', gap: '12px' }}>
             <button
@@ -245,47 +344,67 @@ export default function DataInventarisPage() {
           </div>
 
           {/* Actions */}
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-            <Link
-              href="/create-produk"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '10px 20px',
-                background: '#FFFFFF',
-                color: '#2F516A',
-                borderRadius: '8px',
-                fontSize: '14px',
-                fontWeight: 600,
-                textDecoration: 'none',
-                border: '1px solid #E0E0E0',
-                transition: 'all 0.2s'
-              }}
-            >
-              <iconify-icon icon="ic:round-plus" width="16" />
-              Buat Produk
-            </Link>
-            <Link
-              href="/create-detail-produk"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '10px 20px',
-                background: '#FFFFFF',
-                color: '#2F516A',
-                borderRadius: '8px',
-                fontSize: '14px',
-                fontWeight: 600,
-                textDecoration: 'none',
-                border: '1px solid #E0E0E0',
-                transition: 'all 0.2s'
-              }}
-            >
-              <iconify-icon icon="ic:round-plus" width="16" />
-              Buat Detail Produk
-            </Link>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-start', flex: 1, flexDirection: 'row-reverse' }}>
+            {/* Create Actions */}
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+              <Link
+                href="/create-produk"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 20px',
+                  background: '#FFFFFF', color: '#2F516A', borderRadius: '8px', fontSize: '14px',
+                  fontWeight: 600, textDecoration: 'none', border: '1px solid #E0E0E0', transition: 'all 0.2s'
+                }}
+              >
+                <iconify-icon icon="ic:round-plus" width="16" />
+                Buat Produk
+              </Link>
+              <Link
+                href="/create-detail-produk"
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 20px',
+                  background: '#FFFFFF', color: '#2F516A', borderRadius: '8px', fontSize: '14px',
+                  fontWeight: 600, textDecoration: 'none', border: '1px solid #E0E0E0', transition: 'all 0.2s'
+                }}
+              >
+                <iconify-icon icon="ic:round-plus" width="16" />
+                Buat Detail Produk
+              </Link>
+            </div>
+
+            {/* Import Actions */}
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+              <a
+                href="/templates/template-inventaris.csv"
+                download
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 20px',
+                  background: '#FFFFFF', color: '#2F516A', border: '1px solid #2F516A',
+                  borderRadius: '8px', fontSize: '14px', fontWeight: 600, textDecoration: 'none', cursor: 'pointer'
+                }}
+              >
+                <iconify-icon icon="mdi:download" width="16" />
+                Download Template
+              </a>
+              <input
+                type="file"
+                accept=".xlsx, .xls, .csv"
+                ref={fileInputRef}
+                style={{ display: 'none' }}
+                onChange={handleFileUpload}
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 20px',
+                  background: '#2F516A', color: '#FFFFFF', borderRadius: '8px', fontSize: '14px',
+                  fontWeight: 600, border: 'none', cursor: uploading ? 'not-allowed' : 'pointer'
+                }}
+              >
+                <iconify-icon icon={uploading ? "line-md:loading-twotone-loop" : "mdi:file-excel"} width="16" />
+                {uploading ? 'Memproses...' : 'Import Excel/CSV'}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -404,8 +523,10 @@ export default function DataInventarisPage() {
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            minHeight: '400px'
+            minHeight: '400px',
+            gap: '8px'
           }}>
+            <iconify-icon icon="line-md:loading-twotone-loop" style={{ fontSize: '24px', color: '#2F516A' }}></iconify-icon>
             <p>Loading...</p>
           </div>
         ) : filteredData.length > 0 ? (
@@ -419,36 +540,37 @@ export default function DataInventarisPage() {
             <div style={{ overflowX: 'auto' }}>
               <table style={{
                 width: '100%',
-                borderCollapse: 'collapse'
+                borderCollapse: 'collapse',
+                tableLayout: 'fixed'
               }}>
                 <thead>
                   <tr style={{
                     background: '#E3F2FD',
                     borderBottom: '1px solid #E0E0E0'
                   }}>
-                    <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600, width: '1%', whiteSpace: 'nowrap' }}>No</th>
+                    <th style={{ width: '3%', padding: '16px', textAlign: 'center', color: '#333333', fontSize: '14px', fontWeight: 600 }}>No</th>
                     {activeTab === 'produk' ? (
                       <>
-                        <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600, width: '1%', whiteSpace: 'nowrap' }}>Kategori</th>
-                        <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Nama Produk</th>
-                        <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Kode Produk</th>
-                        <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Merk</th>
-                        <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Tipe/Model</th>
-                        <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Spesifikasi</th>
-                        <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600, width: '1%', whiteSpace: 'nowrap' }}>Stok</th>
-                        <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600, width: '1%', whiteSpace: 'nowrap' }}>Jumlah Barang</th>
+                        <th style={{ width: '7%', padding: '16px', textAlign: 'center', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Kategori</th>
+                        <th style={{ width: '13%', padding: '16px', textAlign: 'center', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Nama Produk</th>
+                        <th style={{ width: '13%', padding: '16px', textAlign: 'center', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Kode Produk</th>
+                        <th style={{ width: '10%', padding: '16px', textAlign: 'center', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Merk</th>
+                        <th style={{ width: '8%', padding: '16px', textAlign: 'center', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Tipe/Model</th>
+                        <th style={{ width: '19%', padding: '16px', textAlign: 'center', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Spesifikasi</th>
+                        <th style={{ width: '6%', padding: '16px', textAlign: 'center', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Stok</th>
+                        <th style={{ width: '6%', padding: '16px', textAlign: 'center', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Jumlah</th>
                       </>
                     ) : (
                       <>
-                        <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600, width: '1%', whiteSpace: 'nowrap' }}>Kategori</th>
-                        <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Nama Produk</th>
-                        <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Kode Produk</th>
-                        <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Kode Seri</th>
-                        <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Lokasi</th>
-                        <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600, width: '1%', whiteSpace: 'nowrap' }}>Status</th>
+                        <th style={{ width: '5%', padding: '16px', textAlign: 'center', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Kategori</th>
+                        <th style={{ width: '10%', padding: '16px', textAlign: 'center', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Nama Produk</th>
+                        <th style={{ width: '18%', padding: '16px', textAlign: 'center', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Kode Produk</th>
+                        <th style={{ width: '18%', padding: '16px', textAlign: 'center', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Kode Seri</th>
+                        {/* <th style={{ width: '15%', padding: '16px', textAlign: 'center', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Lokasi</th> */}
+                        <th style={{ width: '4%', padding: '16px', textAlign: 'center', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Status</th>
                       </>
                     )}
-                    <th style={{ padding: '16px', textAlign: 'left', color: '#333333', fontSize: '14px', fontWeight: 600, width: '1%', whiteSpace: 'nowrap' }}>Aksi</th>
+                    <th style={{ width: '15%', padding: '16px', textAlign: 'center', color: '#333333', fontSize: '14px', fontWeight: 600 }}>Aksi</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -459,8 +581,8 @@ export default function DataInventarisPage() {
                       const p = item as Produk;
                       return (
                         <tr key={p.id} style={{ borderBottom: '1px solid #F0F0F0' }}>
-                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{globalIndex}</td>
-                          <td style={{ padding: '16px' }}>
+                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px', textAlign: 'center' }}>{globalIndex}</td>
+                          <td style={{ padding: '16px', textAlign: 'center' }}>
                             <span style={{
                               display: 'inline-block',
                               padding: '4px 12px',
@@ -473,12 +595,12 @@ export default function DataInventarisPage() {
                               {p.kategori === 'ASET' ? 'Aset' : p.kategori === 'HP' ? 'Habis Pakai' : p.kategori}
                             </span>
                           </td>
-                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{p.nama}</td>
-                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{p.kode}</td>
-                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{p.merk}</td>
-                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{p.model}</td>
-                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{p.spesifikasi || '-'}</td>
-                          <td style={{ padding: '16px' }}>
+                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px', textAlign: 'center' }}>{p.nama}</td>
+                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px', textAlign: 'center', wordWrap: 'break-word', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{p.kode}</td>
+                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px', textAlign: 'center' }}>{p.merk}</td>
+                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px', textAlign: 'center' }}>{p.model}</td>
+                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px', textAlign: 'center' }}>{p.spesifikasi || '-'}</td>
+                          <td style={{ padding: '16px', textAlign: 'center' }}>
                             <span style={{
                               display: 'inline-block',
                               padding: '4px 10px',
@@ -491,7 +613,7 @@ export default function DataInventarisPage() {
                               {p.stok ?? p.kuantitas}
                             </span>
                           </td>
-                          <td style={{ padding: '16px' }}>
+                          <td style={{ padding: '16px', textAlign: 'center' }}>
                             <span style={{
                               display: 'inline-block',
                               padding: '4px 10px',
@@ -504,8 +626,8 @@ export default function DataInventarisPage() {
                               {p.kuantitas} Items
                             </span>
                           </td>
-                          <td style={{ padding: '16px' }}>
-                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                          <td style={{ padding: '16px', textAlign: 'center' }}>
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'center' }}>
                               <button
                                 onClick={() => handleEdit(p.id, 'produk')}
                                 style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#1E1E1E' }}
@@ -529,8 +651,8 @@ export default function DataInventarisPage() {
                       const d = item as DetailProduk;
                       return (
                         <tr key={d.id} style={{ borderBottom: '1px solid #F0F0F0' }}>
-                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{globalIndex}</td>
-                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>
+                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px', textAlign: 'center' }}>{globalIndex}</td>
+                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px', textAlign: 'center' }}>
                             <span style={{
                               display: 'inline-block',
                               padding: '4px 12px',
@@ -543,9 +665,9 @@ export default function DataInventarisPage() {
                               {d.produk?.kategori === 'ASET' ? 'Aset' : d.produk?.kategori === 'HP' ? 'Habis Pakai' : d.produk?.kategori}
                             </span>
                           </td>
-                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{d.produk?.nama || '-'}</td>
-                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{d.produk?.kode || '-'}</td>
-                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{d.kode_seri || '-'}</td>
+                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px', textAlign: 'center' }}>{d.produk?.nama || '-'}</td>
+                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px', textAlign: 'center', wordWrap: 'break-word', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{d.produk?.kode || '-'}</td>
+                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px', textAlign: 'center', wordWrap: 'break-word', overflowWrap: 'anywhere', wordBreak: 'break-word' }}>{d.kode_seri || '-'}</td>
                           {/* <td style={{ padding: '16px' }}>
                             <span style={{
                               color: d.kondisi === 'BAIK' ? '#047857' : '#DC2626',
@@ -555,8 +677,8 @@ export default function DataInventarisPage() {
                               {d.kondisi || '-'}
                             </span>
                           </td> */}
-                          <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{d.lokasi?.nama_ruang || ''} - {d.lokasi?.keterangan || ''}</td>
-                          <td style={{ padding: '16px' }}>
+                          {/* <td style={{ padding: '16px', color: '#333333', fontSize: '14px' }}>{d.lokasi?.nama_ruang || ''} - {d.lokasi?.keterangan || ''}</td> */}
+                          <td style={{ padding: '16px', textAlign: 'center' }}>
                             <span style={{
                               display: 'inline-block',
                               padding: '4px 12px',
@@ -569,9 +691,9 @@ export default function DataInventarisPage() {
                               {d.status || '-'}
                             </span>
                           </td>
-                          <td style={{ padding: '16px' }}>
+                          <td style={{ padding: '16px', textAlign: 'center' }}>
                             {/* Actions */}
-                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'center' }}>
                               <button
                                 onClick={() => handleView(d)}
                                 style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#1E1E1E' }}
@@ -773,7 +895,7 @@ export default function DataInventarisPage() {
 
             {/* Content */}
             <div style={{ display: 'grid', gridTemplateColumns: '250px 1fr', gap: '24px' }}>
-              {/* Left: QR Code */}
+              {/* Left: QR Code + Foto */}
               <div style={{
                 background: '#F9FAFB',
                 padding: '16px',
@@ -781,7 +903,8 @@ export default function DataInventarisPage() {
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                justifyContent: 'center',
+                justifyContent: 'flex-start',
+                gap: '48px',
                 border: '1px dashed #E0E0E0'
               }}>
                 {selectedDetail.kode_scan ? (
@@ -794,7 +917,7 @@ export default function DataInventarisPage() {
                         viewBox={`0 0 256 256`}
                       />
                     </div>
-                    <p style={{ marginTop: '12px', fontSize: '12px', fontWeight: 500, color: '#333' }}>{selectedDetail.kode_scan}</p>
+                    {/* <p style={{ marginTop: '12px', fontSize: '12px', fontWeight: 500, color: '#333' }}>{selectedDetail.kode_scan}</p> */}
                   </>
                 ) : (
                   <>
@@ -809,6 +932,23 @@ export default function DataInventarisPage() {
                     </div>
                     <div style={{ width: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999', marginTop: '12px', fontSize: '12px' }}>No QR</div>
                   </>
+                )}
+
+                {/* Foto Produk */}
+                {selectedDetail.foto ? (
+                  <div style={{ width: '100%' }}>
+                    <p style={{ fontSize: '11px', color: '#999', marginBottom: '6px', textAlign: 'center' }}>Foto Barang</p>
+                    <img
+                      src={selectedDetail.foto}
+                      alt="Foto produk"
+                      style={{ width: '100%', borderRadius: '8px', objectFit: 'cover', maxHeight: '180px' }}
+                    />
+                  </div>
+                ) : (
+                  <div style={{ width: '100%', textAlign: 'center', color: '#bbb', fontSize: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                    <iconify-icon icon="material-symbols:image-not-supported-outline" height="28" />
+                    <span>Tidak ada foto</span>
+                  </div>
                 )}
               </div>
 

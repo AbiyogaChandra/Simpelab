@@ -44,3 +44,5 @@ next-env.d.ts
 # database
 /db
 /generated/prisma
+/public/uploads/detail-produk/*
+/public/uploads/peminjaman/*
