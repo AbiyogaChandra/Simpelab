@@ -271,7 +271,7 @@ export default function BorrowingForm() {
               borderRadius: '24px',
               padding: '4px 8px'
             }}>
-              <Image src="/logo.webp" alt="Simpelab Logo" width={56} height={56} />
+              <Image src="/logo.webp" alt="Simpelab Logo" loading='eager' width={56} height={56} />
               <span style={{
                 color: '#2F516A',
                 fontSize: '26px',

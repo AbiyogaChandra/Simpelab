@@ -46,6 +46,7 @@ export default function LoginAdminPage() {
         <Image
           src="/logo.webp"
           alt="Simpelab Logo"
+          loading='eager'
           width={40}
           height={40}
         />

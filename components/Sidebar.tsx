@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react';
 
 export default function Sidebar() {
     const pathname = usePathname();
-    const [toast, setToast] = useState<{title: string, message: string} | null>(null);
+    const [toast, setToast] = useState<{ title: string, message: string } | null>(null);
 
     useEffect(() => {
         const eventSource = new EventSource('/api/events');
@@ -91,7 +91,7 @@ export default function Sidebar() {
             {/* Header */}
             <div className="p-6 border-b border-[#E5E5E5]">
                 <div className="flex items-center gap-2">
-                    <Image src="/logo.webp" alt="Simpelab Logo" width={56} height={56} />
+                    <Image src="/logo.webp" alt="Simpelab Logo" loading='eager' width={56} height={56} />
                     <span className="text-[#2F516A] text-2xl font-bold">
                         Simpelab
                     </span>
