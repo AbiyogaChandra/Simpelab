@@ -57,6 +57,7 @@ export default function Sidebar() {
         {
             name: 'Data Peminjam',
             path: '/data-peminjam',
+            extraPaths: ['/create-peminjam'],
             icon: (active: boolean) => (
                 <iconify-icon
                     icon="fluent:people-community-24-filled"

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import Sidebar from '@/components/Sidebar';
 import * as XLSX from 'xlsx';
 
@@ -12,6 +13,11 @@ export default function DataPeminjamClient() {
     const [toast, setToast] = useState<{ title: string, message: string, type: 'success' | 'warning' | 'error' } | null>(null);
     // Relative Scroll Memory
     const relativeScrollRef = useRef(0);
+    const [editingPeminjamId, setEditingPeminjamId] = useState<string | null>(null);
+    const [editForm, setEditForm] = useState({ kategori: '', nama: '', nomor_induk: '', kelas: '' });
+    const [showClearModal, setShowClearModal] = useState(false);
+    const [clearCountdown, setClearCountdown] = useState(15);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -86,6 +92,76 @@ export default function DataPeminjamClient() {
         fetchData();
     }, []);
 
+    useEffect(() => {
+        let timer: NodeJS.Timeout;
+        if (showClearModal && clearCountdown > 0) {
+            timer = setTimeout(() => setClearCountdown(prev => prev - 1), 1000);
+        }
+        return () => clearTimeout(timer);
+    }, [showClearModal, clearCountdown]);
+
+    const handleEditClick = (item: any) => {
+        setEditingPeminjamId(item.id);
+        setEditForm({ kategori: item.kategori, nama: item.nama, nomor_induk: item.nomor_induk, kelas: item.kelas || '' });
+    };
+
+    const handleEditSave = async (id: string) => {
+        try {
+            const res = await fetch(`/api/peminjam?id=${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(editForm)
+            });
+            if (res.ok) {
+                showToast('Sukses', 'Data peminjam berhasil diperbarui.', 'success');
+                setEditingPeminjamId(null);
+                fetchData();
+            } else {
+                const err = await res.json();
+                showToast('Gagal', err.error || 'Terjadi kesalahan.', 'error');
+            }
+        } catch (e) {
+            console.error(e);
+            showToast('Gagal', 'Gagal menghubungi server.', 'error');
+        }
+    };
+
+    const handleDeleteClick = async (id: string) => {
+        if (!confirm('Apakah Anda yakin ingin menghapus data peminjam ini?')) return;
+        try {
+            const res = await fetch(`/api/peminjam?id=${id}`, { method: 'DELETE' });
+            if (res.ok) {
+                showToast('Sukses', 'Peminjam berhasil dihapus.', 'success');
+                fetchData();
+            } else {
+                const err = await res.json();
+                showToast('Gagal', err.error || 'Terjadi kesalahan.', 'error');
+            }
+        } catch (e) {
+            showToast('Gagal', 'Gagal menghubungi server.', 'error');
+        }
+    };
+
+    const handleClearAll = async () => {
+        setIsDeleting(true);
+        try {
+            const res = await fetch('/api/peminjam?action=clear', { method: 'DELETE' });
+            if (res.ok) {
+                const json = await res.json();
+                showToast('Sukses', `Berhasil menghapus ${json.count} data peminjam yang tidak aktif.`, 'success');
+                setShowClearModal(false);
+                fetchData();
+            } else {
+                const err = await res.json();
+                showToast('Gagal', err.error || 'Terjadi kesalahan.', 'error');
+            }
+        } catch (e) {
+            showToast('Gagal', 'Terjadi kesalahan pada server.', 'error');
+        } finally {
+            setIsDeleting(false);
+        }
+    };
+
     const showToast = (title: string, message: string, type: 'success' | 'warning' | 'error') => {
         setToast({ title, message, type });
         setTimeout(() => setToast(null), 8000);
@@ -157,8 +233,25 @@ export default function DataPeminjamClient() {
                 </div>
 
                 {/* Controls Row */}
-                <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '24px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '24px' }}>
                     <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                        <button
+                            onClick={() => {
+                                setShowClearModal(true);
+                                setClearCountdown(15);
+                            }}
+                            style={{
+                                display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 20px',
+                                background: '#FEE2E2', color: '#991B1B', borderRadius: '8px', fontSize: '14px',
+                                fontWeight: 600, border: 'none', cursor: 'pointer'
+                            }}
+                        >
+                            <iconify-icon icon="mdi:delete-sweep" width="16" />
+                            Kosongkan Data
+                        </button>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                         <a
                             href="/templates/template-peminjam.csv"
                             download
@@ -190,6 +283,17 @@ export default function DataPeminjamClient() {
                             <iconify-icon icon={uploading ? "line-md:loading-twotone-loop" : "mdi:file-excel"} width="16" />
                             {uploading ? 'Memproses...' : 'Import Excel/CSV'}
                         </button>
+                        <Link
+                            href="/create-peminjam"
+                            style={{
+                                display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 20px',
+                                background: '#FFFFFF', color: '#2F516A', borderRadius: '8px', fontSize: '14px',
+                                fontWeight: 600, textDecoration: 'none', border: '1px solid #E0E0E0', transition: 'all 0.2s'
+                            }}
+                        >
+                            <iconify-icon icon="ic:round-plus" width="16" />
+                            Buat Peminjam
+                        </Link>
                     </div>
                 </div>
 
@@ -271,33 +375,82 @@ export default function DataPeminjamClient() {
                                 <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
                                     <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
                                         <tr style={{ background: '#E3F2FD', borderBottom: '1px solid #E0E0E0' }}>
-                                            <th style={{ width: '3%', padding: '16px', textAlign: 'center', color: '#333', fontSize: '14px', fontWeight: 600 }}>No</th>
-                                            <th style={{ width: '25%', padding: '16px', textAlign: 'center', color: '#333', fontSize: '14px', fontWeight: 600 }}>Nama</th>
-                                            <th style={{ width: '42%', padding: '16px', textAlign: 'center', color: '#333', fontSize: '14px', fontWeight: 600 }}>NIP/NIS</th>
+                                            <th style={{ width: '5%', padding: '16px', textAlign: 'center', color: '#333', fontSize: '14px', fontWeight: 600 }}>No</th>
                                             <th style={{ width: '10%', padding: '16px', textAlign: 'center', color: '#333', fontSize: '14px', fontWeight: 600 }}>Kategori</th>
+                                            <th style={{ width: '25%', padding: '16px', textAlign: 'center', color: '#333', fontSize: '14px', fontWeight: 600 }}>Nama</th>
+                                            <th style={{ width: '35%', padding: '16px', textAlign: 'center', color: '#333', fontSize: '14px', fontWeight: 600 }}>NIP/NIS</th>
                                             <th style={{ width: '10%', padding: '16px', textAlign: 'center', color: '#333', fontSize: '14px', fontWeight: 600 }}>Kelas</th>
+                                            <th style={{ width: '15%', padding: '16px', textAlign: 'center', color: '#333', fontSize: '14px', fontWeight: 600 }}>Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {paginatedData.map((item, index) => (
+                                        {paginatedData.map((item, index) => {
+                                            const isEditing = editingPeminjamId === item.id;
+                                            return (
                                             <tr key={item.id} style={{ borderBottom: '1px solid #F0F0F0' }}>
                                                 <td style={{ padding: '16px', color: '#333', fontSize: '14px', textAlign: 'center' }}>{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                                                <td style={{ padding: '16px', color: '#333', fontSize: '14px' }}>{item.nama}</td>
-                                                <td style={{ padding: '16px', color: '#333', fontSize: '14px', textAlign: 'center' }}>{item.nomor_induk}</td>
                                                 <td style={{ padding: '16px', color: '#333', fontSize: '14px', textAlign: 'center' }}>
-                                                    <span style={{
-                                                        display: 'inline-block',
-                                                        padding: '4px 12px',
-                                                        borderRadius: '12px',
-                                                        background: '#E3F2FD',
-                                                        color: '#333333',
-                                                        fontSize: '12px',
-                                                        fontWeight: 500
-                                                    }}>{formatKategori(item.kategori)}</span>
+                                                    {isEditing ? (
+                                                        <select value={editForm.kategori} onChange={e => setEditForm({...editForm, kategori: e.target.value})} style={{ width: '100%', padding: '4px', border: '1px solid #CCC', borderRadius: '4px' }}>
+                                                            <option value="GURU">Guru</option>
+                                                            <option value="SISWA">Siswa</option>
+                                                        </select>
+                                                    ) : (
+                                                        <span style={{
+                                                            display: 'inline-block',
+                                                            padding: '4px 12px',
+                                                            borderRadius: '12px',
+                                                            background: '#E3F2FD',
+                                                            color: '#333333',
+                                                            fontSize: '12px',
+                                                            fontWeight: 500
+                                                        }}>{formatKategori(item.kategori)}</span>
+                                                    )}
                                                 </td>
-                                                <td style={{ padding: '16px', color: '#333', fontSize: '14px', textAlign: 'center' }}>{item.kelas || '-'}</td>
+                                                <td style={{ padding: '16px', color: '#333', fontSize: '14px' }}>
+                                                    {isEditing ? (
+                                                        <input type="text" value={editForm.nama} onChange={e => setEditForm({...editForm, nama: e.target.value})} style={{ width: '100%', padding: '4px', border: '1px solid #CCC', borderRadius: '4px' }} />
+                                                    ) : (
+                                                        item.nama
+                                                    )}
+                                                </td>
+                                                <td style={{ padding: '16px', color: '#333', fontSize: '14px', textAlign: 'center' }}>
+                                                    {isEditing ? (
+                                                        <input type="text" value={editForm.nomor_induk} onChange={e => setEditForm({...editForm, nomor_induk: e.target.value})} style={{ width: '100%', padding: '4px', border: '1px solid #CCC', borderRadius: '4px', textAlign: 'center' }} />
+                                                    ) : (
+                                                        item.nomor_induk
+                                                    )}
+                                                </td>
+                                                <td style={{ padding: '16px', color: '#333', fontSize: '14px', textAlign: 'center' }}>
+                                                    {isEditing ? (
+                                                        <input type="text" value={editForm.kelas} onChange={e => setEditForm({...editForm, kelas: e.target.value})} style={{ width: '100%', padding: '4px', border: '1px solid #CCC', borderRadius: '4px', textAlign: 'center' }} />
+                                                    ) : (
+                                                        item.kelas || '-'
+                                                    )}
+                                                </td>
+                                                <td style={{ padding: '16px', textAlign: 'center' }}>
+                                                    {isEditing ? (
+                                                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'center' }}>
+                                                            <button onClick={() => handleEditSave(item.id)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#065F46' }} title="Simpan">
+                                                                <iconify-icon icon="material-symbols:check-circle-outline-rounded" width="18" height="18"></iconify-icon>
+                                                            </button>
+                                                            <button onClick={() => setEditingPeminjamId(null)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#991B1B' }} title="Batal">
+                                                                <iconify-icon icon="material-symbols:cancel-outline-rounded" width="18" height="18"></iconify-icon>
+                                                            </button>
+                                                        </div>
+                                                    ) : (
+                                                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', justifyContent: 'center' }}>
+                                                            <button onClick={() => handleEditClick(item)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#1E1E1E' }} title="Edit">
+                                                                <iconify-icon icon="material-symbols:edit-outline-rounded" width="18" height="18"></iconify-icon>
+                                                            </button>
+                                                            <button onClick={() => handleDeleteClick(item.id)} style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#E37158' }} title="Delete">
+                                                                <iconify-icon icon="fluent:delete-12-regular" width="18" height="18"></iconify-icon>
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </td>
                                             </tr>
-                                        ))}
+                                        )})}
                                     </tbody>
                                 </table>
                             </div>
@@ -396,6 +549,44 @@ export default function DataPeminjamClient() {
                     )}
                 </div>
             </div>
+
+            {/* Clear Confirmation Modal */}
+            {showClearModal && (
+                <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ background: '#FFFFFF', padding: '32px', borderRadius: '16px', maxWidth: '400px', width: '100%', boxShadow: '0 10px 25px rgba(0,0,0,0.2)' }}>
+                        <div style={{ textAlign: 'center', marginBottom: '24px' }}>
+                            <div style={{ width: '64px', height: '64px', background: '#FEE2E2', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+                                <iconify-icon icon="mdi:alert" style={{ fontSize: '32px', color: '#DC2626' }}></iconify-icon>
+                            </div>
+                            <h2 style={{ color: '#111827', fontSize: '20px', fontWeight: 700, marginBottom: '8px' }}>Yakin Kosongkan Data?</h2>
+                            <p style={{ color: '#4B5563', fontSize: '14px', lineHeight: '1.5' }}>
+                                Aksi ini akan <strong>menghapus seluruh riwayat peminjaman</strong> (kecuali yang sedang berstatus DIPINJAM/TERLAMBAT) beserta data guru/siswa. Aksi ini tidak dapat dibatalkan.
+                            </p>
+                        </div>
+                        <div style={{ display: 'flex', gap: '12px' }}>
+                            <button
+                                onClick={() => setShowClearModal(false)}
+                                disabled={isDeleting}
+                                style={{ flex: 1, padding: '12px', background: '#F3F4F6', color: '#374151', borderRadius: '8px', border: 'none', fontWeight: 600, cursor: isDeleting ? 'not-allowed' : 'pointer' }}
+                            >
+                                Batal
+                            </button>
+                            <button
+                                onClick={handleClearAll}
+                                disabled={clearCountdown > 0 || isDeleting}
+                                style={{
+                                    flex: 1, padding: '12px', background: clearCountdown > 0 ? '#FCA5A5' : '#DC2626',
+                                    color: '#FFFFFF', borderRadius: '8px', border: 'none', fontWeight: 600,
+                                    cursor: (clearCountdown > 0 || isDeleting) ? 'not-allowed' : 'pointer',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
+                                }}
+                            >
+                                {isDeleting ? 'Menghapus...' : clearCountdown > 0 ? `Tunggu (${clearCountdown}s)` : 'Hapus Semua'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {toast && (
                 <div style={{
