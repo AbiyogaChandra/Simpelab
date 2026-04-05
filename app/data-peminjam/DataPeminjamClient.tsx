@@ -268,36 +268,36 @@ export default function DataPeminjamClient() {
                             <div style={{ overflow: 'auto', maxHeight: 'calc(100vh - 350px)', minHeight: '400px', borderTop: '1px solid #F0F0F0' }}>
                                 <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
                                     <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
-                                    <tr style={{ background: '#E3F2FD', borderBottom: '1px solid #E0E0E0' }}>
-                                        <th style={{ width: '3%', padding: '16px', textAlign: 'center', color: '#333', fontSize: '14px', fontWeight: 600 }}>No</th>
-                                        <th style={{ width: '32%', padding: '16px', textAlign: 'center', color: '#333', fontSize: '14px', fontWeight: 600 }}>Nama</th>
-                                        <th style={{ width: '30%', padding: '16px', textAlign: 'center', color: '#333', fontSize: '14px', fontWeight: 600 }}>NIP/NIS</th>
-                                        <th style={{ width: '5%', padding: '16px', textAlign: 'center', color: '#333', fontSize: '14px', fontWeight: 600 }}>Kategori</th>
-                                        <th style={{ width: '30%', padding: '16px', textAlign: 'center', color: '#333', fontSize: '14px', fontWeight: 600 }}>Kelas</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    {paginatedData.map((item, index) => (
-                                        <tr key={item.id} style={{ borderBottom: '1px solid #F0F0F0' }}>
-                                            <td style={{ padding: '16px', color: '#333', fontSize: '14px', textAlign: 'center' }}>{(currentPage - 1) * itemsPerPage + index + 1}</td>
-                                            <td style={{ padding: '16px', color: '#333', fontSize: '14px' }}>{item.nama}</td>
-                                            <td style={{ padding: '16px', color: '#333', fontSize: '14px', textAlign: 'center' }}>{item.nomor_induk}</td>
-                                            <td style={{ padding: '16px', color: '#333', fontSize: '14px', textAlign: 'center' }}>
-                                                <span style={{
-                                                    display: 'inline-block',
-                                                    padding: '4px 12px',
-                                                    borderRadius: '12px',
-                                                    background: '#E3F2FD',
-                                                    color: '#333333',
-                                                    fontSize: '12px',
-                                                    fontWeight: 500
-                                                }}>{formatKategori(item.kategori)}</span>
-                                            </td>
-                                            <td style={{ padding: '16px', color: '#333', fontSize: '14px', textAlign: 'center' }}>{item.kelas || '-'}</td>
+                                        <tr style={{ background: '#E3F2FD', borderBottom: '1px solid #E0E0E0' }}>
+                                            <th style={{ width: '3%', padding: '16px', textAlign: 'center', color: '#333', fontSize: '14px', fontWeight: 600 }}>No</th>
+                                            <th style={{ width: '25%', padding: '16px', textAlign: 'center', color: '#333', fontSize: '14px', fontWeight: 600 }}>Nama</th>
+                                            <th style={{ width: '42%', padding: '16px', textAlign: 'center', color: '#333', fontSize: '14px', fontWeight: 600 }}>NIP/NIS</th>
+                                            <th style={{ width: '10%', padding: '16px', textAlign: 'center', color: '#333', fontSize: '14px', fontWeight: 600 }}>Kategori</th>
+                                            <th style={{ width: '10%', padding: '16px', textAlign: 'center', color: '#333', fontSize: '14px', fontWeight: 600 }}>Kelas</th>
                                         </tr>
-                                    ))}
-                                </tbody>
-                            </table>
+                                    </thead>
+                                    <tbody>
+                                        {paginatedData.map((item, index) => (
+                                            <tr key={item.id} style={{ borderBottom: '1px solid #F0F0F0' }}>
+                                                <td style={{ padding: '16px', color: '#333', fontSize: '14px', textAlign: 'center' }}>{(currentPage - 1) * itemsPerPage + index + 1}</td>
+                                                <td style={{ padding: '16px', color: '#333', fontSize: '14px' }}>{item.nama}</td>
+                                                <td style={{ padding: '16px', color: '#333', fontSize: '14px', textAlign: 'center' }}>{item.nomor_induk}</td>
+                                                <td style={{ padding: '16px', color: '#333', fontSize: '14px', textAlign: 'center' }}>
+                                                    <span style={{
+                                                        display: 'inline-block',
+                                                        padding: '4px 12px',
+                                                        borderRadius: '12px',
+                                                        background: '#E3F2FD',
+                                                        color: '#333333',
+                                                        fontSize: '12px',
+                                                        fontWeight: 500
+                                                    }}>{formatKategori(item.kategori)}</span>
+                                                </td>
+                                                <td style={{ padding: '16px', color: '#333', fontSize: '14px', textAlign: 'center' }}>{item.kelas || '-'}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
                             </div>
                             {/* Footer Pagination */}
                             <div style={{
