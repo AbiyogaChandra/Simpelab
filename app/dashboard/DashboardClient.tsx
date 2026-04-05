@@ -40,7 +40,7 @@ export default function DashboardPage() {
         });
 
         // Recent Products (Last 3)
-        const sortedProducts = [...products].sort((a: any, b: any) => b.id - a.id).slice(0, 3);
+        const sortedProducts = [...products].sort((a: any, b: any) => b.id - a.id).slice(0, 5);
         setRecentProducts(sortedProducts);
 
         // Fetch Activities (Aktivitas)
@@ -51,7 +51,7 @@ export default function DashboardPage() {
         const activitiesList = Array.isArray(activitiesData) ? activitiesData : (activitiesData.data || []);
 
         // Limit to 3 recent activities
-        setRecentActivities(activitiesList.slice(0, 3));
+        setRecentActivities(activitiesList.slice(0, 5));
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
       } finally {
@@ -60,6 +60,10 @@ export default function DashboardPage() {
     };
 
     fetchData();
+
+    const handleSync = () => fetchData();
+    window.addEventListener('syncData', handleSync);
+    return () => window.removeEventListener('syncData', handleSync);
   }, []);
 
   const getTagColor = (tag: string) => {

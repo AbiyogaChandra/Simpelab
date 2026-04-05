@@ -14,9 +14,9 @@ export default function Sidebar() {
         eventSource.onmessage = (event) => {
             try {
                 const data = JSON.parse(event.data);
+                window.dispatchEvent(new CustomEvent('syncData', { detail: data }));
                 if (data.type === 'NEW_PENGAJUAN') {
                     setToast({ title: data.title, message: data.message });
-                    setTimeout(() => setToast(null), 5000);
                 }
             } catch (err) {
                 console.error("Error parsing SSE:", err);

@@ -91,6 +91,10 @@ export default function DataPeminjamanPage() {
 
   useEffect(() => {
     fetchPeminjaman();
+
+    const handleSync = () => fetchPeminjaman();
+    window.addEventListener('syncData', handleSync);
+    return () => window.removeEventListener('syncData', handleSync);
   }, []);
 
 

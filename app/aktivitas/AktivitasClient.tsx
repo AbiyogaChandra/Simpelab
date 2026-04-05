@@ -54,7 +54,13 @@ export default function AktivitasPage() {
       fetchActivities();
     }, 300); // Debounce search
 
-    return () => clearTimeout(timeoutId);
+    const handleSync = () => fetchActivities();
+    window.addEventListener('syncData', handleSync);
+
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('syncData', handleSync);
+    };
   }, [filter, search, page, startDate, endDate]);
 
   const getTagColor = (tag: string) => {
