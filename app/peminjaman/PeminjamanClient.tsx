@@ -173,41 +173,15 @@ export default function DataPeminjamanPage() {
   ];
 
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        background: '#F5F5F5',
-        fontFamily: 'Outfit, sans-serif',
-      }}
-    >
+    <div className="page-wrapper">
       <Sidebar />
 
-      <div
-        style={{
-          marginLeft: '280px',
-          padding: '32px',
-          minHeight: '100vh',
-        }}
-      >
+      <div className="main-content">
         {/* Header */}
-        <h1
-          style={{
-            color: '#333333',
-            fontSize: '32px',
-            fontWeight: 700,
-            marginBottom: '8px'
-          }}
-        >
+        <h1 className="page-title">
           Peminjaman
         </h1>
-        <p
-          style={{
-            color: '#666666',
-            fontSize: '16px',
-            fontWeight: 400,
-            marginBottom: '32px'
-          }}
-        >
+        <p className="page-subtitle">
           Kelola pengajuan dan status peminjaman barang lab
         </p>
 
@@ -738,7 +712,7 @@ export default function DataPeminjamanPage() {
                                padding: '8px 12px',
                                border: '1px solid #E0E0E0',
                                borderRadius: '6px',
-                               fontSize: '13px',
+                                fontSize: '14px',
                                background: '#FFFFFF',
                                outline: 'none',
                                flexShrink: 0,
@@ -767,7 +741,7 @@ export default function DataPeminjamanPage() {
                   color: '#FFFFFF',
                   border: 'none',
                   borderRadius: '8px',
-                  fontSize: '15px',
+                  fontSize: '14px',
                   fontWeight: 600,
                   cursor: 'pointer',
                   fontFamily: 'inherit',
@@ -787,7 +761,7 @@ export default function DataPeminjamanPage() {
                   color: '#2F516A',
                   border: '1px solid #E0E0E0',
                   borderRadius: '8px',
-                  fontSize: '15px',
+                  fontSize: '14px',
                   fontWeight: 600,
                   cursor: 'pointer',
                   fontFamily: 'inherit',

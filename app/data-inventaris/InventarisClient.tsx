@@ -260,36 +260,18 @@ export default function DataInventarisPage() {
   }, [paginatedData, activeTab]);
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: '#F5F5F5',
-      fontFamily: 'Outfit, sans-serif'
-    }}>
+    <div className="page-wrapper">
       {/* Left Sidebar */}
       <Sidebar />
 
       {/* Main Content Area */}
-      <div style={{
-        marginLeft: '280px',
-        padding: '32px',
-        minHeight: '100vh'
-      }}>
+      <div className="main-content">
         {/* Page Header with Create Buttons */}
         <div>
-          <h1 style={{
-            color: '#333333',
-            fontSize: '32px',
-            fontWeight: 700,
-            marginBottom: '8px'
-          }}>
+          <h1 className="page-title">
             Data Inventaris
           </h1>
-          <p style={{
-            color: '#666666',
-            fontSize: '16px',
-            fontWeight: 400,
-            marginBottom: '32px'
-          }}>
+          <p className="page-subtitle">
             Kelola dan lihat semua data inventaris
           </p>
         </div>

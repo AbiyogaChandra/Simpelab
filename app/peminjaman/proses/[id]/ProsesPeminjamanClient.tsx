@@ -383,22 +383,10 @@ export default function ProsesPeminjamanPage() {
 
     return (
         <>
-            <div
-                style={{
-                    minHeight: '100vh',
-                    background: '#F5F5F5',
-                    fontFamily: 'Outfit, sans-serif',
-                }}
-            >
+            <div className="page-wrapper">
                 <Sidebar />
 
-                <div
-                    style={{
-                        marginLeft: '280px',
-                        padding: '32px',
-                        minHeight: '100vh',
-                    }}
-                >
+                <div className="main-content">
                     {/* Back + Title */}
                     <Link
                         href="/peminjaman"
@@ -416,24 +404,10 @@ export default function ProsesPeminjamanPage() {
                         <span style={{ fontSize: '20px' }}>&lt;</span>
                         Kembali
                     </Link>
-                    <h1
-                        style={{
-                            color: '#333333',
-                            fontSize: '32px',
-                            fontWeight: 700,
-                            marginBottom: '8px'
-                        }}
-                    >
+                    <h1 className="page-title">
                         Proses Peminjaman
                     </h1>
-                    <p
-                        style={{
-                            color: '#666666',
-                            fontSize: '16px',
-                            fontWeight: 400,
-                            marginBottom: '32px'
-                        }}
-                    >
+                    <p className="page-subtitle">
                         Klik untuk mengedit data peminjaman
                     </p>
 
@@ -587,7 +561,7 @@ export default function ProsesPeminjamanPage() {
                                                             color: isActive ? '#2F516A' : '#FFFFFF',
                                                             border: '1px solid #2F516A',
                                                             borderRadius: '4px',
-                                                            fontSize: '13px',
+                                                            fontSize: '12px',
                                                             fontWeight: 600,
                                                             cursor: 'pointer'
                                                         }}

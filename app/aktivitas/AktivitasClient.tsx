@@ -92,35 +92,17 @@ export default function AktivitasPage() {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: '#F5F5F5',
-      fontFamily: 'Outfit, sans-serif'
-    }}>
+    <div className="page-wrapper">
       {/* Left Sidebar */}
       <Sidebar />
 
       {/* Main Content Area */}
-      <div style={{
-        marginLeft: '280px',
-        padding: '32px',
-        minHeight: '100vh'
-      }}>
+      <div className="main-content">
         {/* Page Header */}
-        <h1 style={{
-          color: '#333333',
-          fontSize: '32px',
-          fontWeight: 700,
-          marginBottom: '8px'
-        }}>
+        <h1 className="page-title">
           Aktivitas
         </h1>
-        <p style={{
-          color: '#666666',
-          fontSize: '16px',
-          fontWeight: 400,
-          marginBottom: '24px'
-        }}>
+        <p className="page-subtitle" style={{ marginBottom: '24px' }}>
           Riwayat semua perubahan data inventaris
         </p>
 

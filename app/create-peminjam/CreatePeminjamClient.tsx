@@ -84,12 +84,12 @@ export default function CreatePeminjamClient() {
   // Prevent editing check via searchParams not needed because inline edit was chosen.
 
   return (
-    <div style={{ minHeight: '100vh', background: '#F5F5F5', fontFamily: 'Outfit, sans-serif' }}>
+    <div className="page-wrapper">
       <Sidebar />
 
-      <div style={{ marginLeft: '280px', padding: '32px' }}>
+      <div className="main-content">
         {/* Breadcrumb */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '32px' }}>
+        <div className="breadcrumb">
           <Link href="/data-peminjam" style={{ color: '#2F516A', textDecoration: 'none', fontSize: '14px', fontWeight: 500 }}>
             Data Peminjam
           </Link>
@@ -101,23 +101,23 @@ export default function CreatePeminjamClient() {
 
         {/* Header */}
         <div style={{ marginBottom: '32px' }}>
-          <h1 style={{ color: '#333333', fontSize: '32px', fontWeight: 700, marginBottom: '8px' }}>
+          <h1 className="page-title">
             Buat Data Peminjam
           </h1>
-          <p style={{ color: '#666666', fontSize: '16px', fontWeight: 400 }}>
+          <p className="page-subtitle" style={{ marginBottom: 0 }}>
             Silahkan masukkan informasi guru atau siswa baru.
           </p>
         </div>
 
         {/* Form Container */}
-        <div style={{ background: '#FFFFFF', borderRadius: '12px', padding: '32px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
+        <div className="card" style={{ padding: '32px' }}>
           <form onSubmit={handleSubmit}>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
 
               {/* Row 1 */}
               <div style={{ display: 'flex', gap: '24px' }}>
                 <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', marginBottom: '8px', color: '#333333', fontSize: '14px', fontWeight: 600 }}>
+                  <label className="form-label">
                     Kategori <span style={{ color: '#DC2626' }}>*</span>
                   </label>
                   <select
@@ -138,7 +138,7 @@ export default function CreatePeminjamClient() {
                 </div>
 
                 <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', marginBottom: '8px', color: '#333333', fontSize: '14px', fontWeight: 600 }}>
+                  <label className="form-label">
                     Nama Lengkap <span style={{ color: '#DC2626' }}>*</span>
                   </label>
                   <input
@@ -148,10 +148,7 @@ export default function CreatePeminjamClient() {
                     onChange={handleChange}
                     placeholder="Masukkan nama lengkap"
                     required
-                    style={{
-                      width: '100%', padding: '12px 16px', border: '1px solid #E0E0E0',
-                      borderRadius: '8px', fontSize: '14px', outline: 'none', color: '#000000'
-                    }}
+                    className="form-input"
                   />
                 </div>
               </div>
@@ -159,7 +156,7 @@ export default function CreatePeminjamClient() {
               {/* Row 2 */}
               <div style={{ display: 'flex', gap: '24px' }}>
                 <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', marginBottom: '8px', color: '#333333', fontSize: '14px', fontWeight: 600 }}>
+                  <label className="form-label">
                     NIP / NIS <span style={{ color: '#DC2626' }}>*</span>
                   </label>
                   <input
@@ -169,15 +166,12 @@ export default function CreatePeminjamClient() {
                     onChange={handleChange}
                     placeholder="Masukkan NIP atau NIS"
                     required
-                    style={{
-                      width: '100%', padding: '12px 16px', border: '1px solid #E0E0E0',
-                      borderRadius: '8px', fontSize: '14px', outline: 'none', color: '#000000'
-                    }}
+                    className="form-input"
                   />
                 </div>
 
                 <div style={{ flex: 1 }}>
-                  <label style={{ display: 'block', marginBottom: '8px', color: '#333333', fontSize: '14px', fontWeight: 600 }}>
+                  <label className="form-label">
                     Kelas
                   </label>
                   <div style={{ position: 'relative' }}>

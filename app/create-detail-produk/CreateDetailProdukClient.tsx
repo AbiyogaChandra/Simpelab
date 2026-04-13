@@ -309,35 +309,17 @@ function CreateDetailProdukContent() {
   };
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: '#F5F5F5',
-      fontFamily: 'Outfit, sans-serif'
-    }}>
+    <div className="page-wrapper">
       {/* Left Sidebar */}
       <Sidebar />
 
       {/* Main Content Area */}
-      <div style={{
-        marginLeft: '280px',
-        padding: '32px',
-        minHeight: '100vh'
-      }}>
+      <div className="main-content">
         {/* Page Header */}
-        <h1 style={{
-          color: '#333333',
-          fontSize: '32px',
-          fontWeight: 700,
-          marginBottom: '8px'
-        }}>
+        <h1 className="page-title">
           {isEditing ? 'Ubah Detail Produk' : 'Buat Detail Produk'}
         </h1>
-        <p style={{
-          color: '#666666',
-          fontSize: '16px',
-          fontWeight: 400,
-          marginBottom: '32px'
-        }}>
+        <p className="page-subtitle">
           {isEditing ? 'Perbarui data detail produk' : 'Daftarkan detail produk untuk setiap produk'}
         </p>
 
@@ -810,7 +792,7 @@ function CreateDetailProdukContent() {
                         viewBox={`0 0 256 256`}
                       />
                     </div>
-                    <span style={{ marginTop: '16px', fontSize: '13px', color: '#999999', fontWeight: 500 }}>
+                    <span style={{ marginTop: '16px', fontSize: '12px', color: '#999999', fontWeight: 500 }}>
                       Menunggu Generasi Kode...
                     </span>
                   </>
@@ -861,7 +843,7 @@ function CreateDetailProdukContent() {
                         borderRadius: '12px'
                       }}
                     />
-                    <p style={{ fontSize: '13px', marginTop: '8px', color: '#999' }}>
+                    <p style={{ fontSize: '12px', marginTop: '8px', color: '#999' }}>
                       Klik untuk mengganti foto
                     </p>
                   </>

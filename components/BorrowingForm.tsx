@@ -738,7 +738,7 @@ export default function BorrowingForm() {
               className="w-full rounded-lg font-semibold text-white transition-colors"
               style={{
                 background: '#2F5F7C',
-                fontSize: '15px',
+                fontSize: '14px',
                 fontWeight: 600,
                 height: '48px',
                 marginTop: '8px',
@@ -947,7 +947,7 @@ export default function BorrowingForm() {
                     color: '#FFFFFF',
                     border: 'none',
                     borderRadius: '8px',
-                    fontSize: '15px',
+                    fontSize: '14px',
                     fontWeight: 600,
                     cursor: 'pointer',
                     transition: 'background-color 0.2s',

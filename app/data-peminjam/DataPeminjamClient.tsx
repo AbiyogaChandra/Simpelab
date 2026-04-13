@@ -223,18 +223,18 @@ export default function DataPeminjamClient() {
     };
 
     return (
-        <div style={{ minHeight: '100vh', background: '#F5F5F5', fontFamily: 'Outfit, sans-serif' }}>
+        <div className="page-wrapper">
             <Sidebar />
 
-            <div style={{ marginLeft: '280px', padding: '32px', minHeight: '100vh' }}>
+            <div className="main-content">
                 <div style={{ marginBottom: '32px' }}>
-                    <h1 style={{ color: '#333333', fontSize: '32px', fontWeight: 700, marginBottom: '8px' }}>Data Peminjam</h1>
-                    <p style={{ color: '#666666', fontSize: '16px', fontWeight: 400 }}>Kelola data guru dan siswa</p>
+                    <h1 className="page-title">Data Peminjam</h1>
+                    <p className="page-subtitle" style={{ marginBottom: 0 }}>Kelola data guru dan siswa</p>
                 </div>
 
                 {/* Controls Row */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '16px', marginBottom: '24px' }}>
-                    <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                <div className="controls-row">
+                    <div className="controls-group">
                         <button
                             onClick={() => {
                                 setShowClearModal(true);

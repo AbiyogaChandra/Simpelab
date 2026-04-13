@@ -106,35 +106,17 @@ export default function DashboardPage() {
   }
 
   return (
-    <div style={{
-      minHeight: '100vh',
-      background: '#F5F5F5',
-      fontFamily: 'Outfit, sans-serif'
-    }}>
+    <div className="page-wrapper">
       {/* Left Sidebar */}
       <Sidebar />
 
       {/* Main Content Area */}
-      <div style={{
-        marginLeft: '280px',
-        padding: '32px',
-        minHeight: '100vh'
-      }}>
+      <div className="main-content">
         {/* Page Title */}
-        <h1 style={{
-          color: '#333333',
-          fontSize: '32px',
-          fontWeight: 700,
-          marginBottom: '8px'
-        }}>
+        <h1 className="page-title">
           Dashboard
         </h1>
-        <p style={{
-          color: '#666666',
-          fontSize: '16px',
-          fontWeight: 400,
-          marginBottom: '32px'
-        }}>
+        <p className="page-subtitle">
           Ringkasan data inventaris Lab TKJ
         </p>
 
@@ -351,12 +333,7 @@ export default function DashboardPage() {
             padding: '24px',
             boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
           }}>
-            <h2 style={{
-              color: '#333333',
-              fontSize: '20px',
-              fontWeight: 700,
-              marginBottom: '20px'
-            }}>
+            <h2 className="section-title">
               Produk Terbaru
             </h2>
             <div style={{
@@ -444,12 +421,7 @@ export default function DashboardPage() {
             padding: '24px',
             boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)'
           }}>
-            <h2 style={{
-              color: '#333333',
-              fontSize: '20px',
-              fontWeight: 700,
-              marginBottom: '20px'
-            }}>
+            <h2 className="section-title">
               Aktivitas Terbaru
             </h2>
             <div style={{
