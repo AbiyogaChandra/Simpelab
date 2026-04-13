@@ -12,7 +12,8 @@
     "db:test": "tsx scripts/test-database.ts",
     "db:verify": "tsx scripts/verify-validation.ts",
     "db:studio": "prisma studio",
-    "db:seed": "tsx scripts/seed_database.ts"
+    "db:seed": "tsx scripts/seed_database.ts",
+    "db:admin": "tsx scripts/add_admin.ts"
   },
   "dependencies": {
     "@prisma/adapter-better-sqlite3": "^7.3.0",
