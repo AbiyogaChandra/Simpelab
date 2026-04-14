@@ -110,15 +110,15 @@ export async function POST(request: Request) {
 
     // Fetch Peminjam details for logging
     const peminjamData = await prisma.peminjam.findUnique({
-        where: { id: id_peminjam }
+      where: { id: id_peminjam }
     });
 
     if (!peminjamData) {
-        return NextResponse.json({ error: "Peminjam not found" }, { status: 404 });
+      return NextResponse.json({ error: "Peminjam not found" }, { status: 404 });
     }
 
     // Transaction to ensure data consistency
-    const pengajuan = await prisma.$transaction(async (tx) => {
+    const pengajuan = await prisma.$transaction(async (tx: any) => {
       // 1. Create Pengajuan
       const newPengajuan = await tx.pengajuan.create({
         data: {
@@ -152,7 +152,7 @@ export async function POST(request: Request) {
             kuantitas: item.kuantitas,
           },
         });
-        
+
         // Note: We do NOT assign specific DetailProduk (ASET) or decrement stock (HP) yet.
         // This is strictly a request ("Pengajuan") to be processed by an Admin later.
       }

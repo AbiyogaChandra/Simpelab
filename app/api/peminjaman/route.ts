@@ -132,7 +132,7 @@ export async function PUT(request: Request) {
         }
 
         // Transaction handling for updates and item linking
-        const result = await prisma.$transaction(async (tx) => {
+        const result = await prisma.$transaction(async (tx: any) => {
             // 1. Update Pengajuan details
             const updatedPengajuan = await tx.pengajuan.update({
                 where: { id },
@@ -214,7 +214,7 @@ export async function PUT(request: Request) {
             // 4. Handle Return (Pengembalian)
             if (status === 'KEMBALI') {
                 const { itemConditions, location_name, condition, id_lokasi } = body;
-                
+
                 let lokasiId = id_lokasi;
 
                 // If no ID provided but name is present, try to find or create
@@ -237,7 +237,7 @@ export async function PUT(request: Request) {
                 const detailPengajuanIds = await tx.detailPengajuan.findMany({
                     where: { id_pengajuan: id },
                     select: { id: true }
-                }).then(res => res.map(r => r.id));
+                }).then((res: any) => res.map((r: any) => r.id));
 
                 const detailProdukPengajuan = await tx.detailProdukPengajuan.findMany({
                     where: { id_detail_pengajuan: { in: detailPengajuanIds } }
@@ -250,7 +250,7 @@ export async function PUT(request: Request) {
                     } else if (condition) {
                         itemCondition = condition;
                     }
-                    
+
                     const updateData: any = {
                         status: 'TERSEDIA',
                         kondisi: itemCondition
@@ -309,7 +309,7 @@ export async function DELETE(request: Request) {
             return NextResponse.json({ error: "ID required" }, { status: 400 });
         }
 
-        const result = await prisma.$transaction(async (tx) => {
+        const result = await prisma.$transaction(async (tx: any) => {
             // Check if status is DIAJUKAN (safe to delete)
             const pengajuan = await tx.pengajuan.findUnique({ where: { id } });
             if (!pengajuan) throw new Error("Pengajuan not found");
@@ -322,7 +322,7 @@ export async function DELETE(request: Request) {
             const detailPengajuanIds = await tx.detailPengajuan.findMany({
                 where: { id_pengajuan: id },
                 select: { id: true }
-            }).then(res => res.map(r => r.id));
+            }).then((res: any) => res.map((r: any) => r.id));
 
             await tx.detailProdukPengajuan.deleteMany({
                 where: { id_detail_pengajuan: { in: detailPengajuanIds } }

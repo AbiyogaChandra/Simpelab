@@ -6,7 +6,7 @@ import { logActivity } from "@/lib/activity";
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        
+
         if (!Array.isArray(body) || body.length === 0) {
             return NextResponse.json({ error: "Invalid data format" }, { status: 400 });
         }
@@ -15,10 +15,10 @@ export async function POST(request: Request) {
 
         let importedProductsCount = 0;
         let importedDetailsCount = 0;
-        
+
         // Execute imports one by one sequentially since prisma does not allow conditionally
         // creating dependent nested arrays in bulk.
-        await prisma.$transaction(async (tx) => {
+        await prisma.$transaction(async (tx: any) => {
             for (const row of body) {
                 const {
                     kategori,
@@ -104,10 +104,10 @@ export async function POST(request: Request) {
             );
         }
 
-        return NextResponse.json({ 
-            message: "Import success", 
+        return NextResponse.json({
+            message: "Import success",
             imported_products: importedProductsCount,
-            imported_details: importedDetailsCount 
+            imported_details: importedDetailsCount
         }, { status: 201 });
 
     } catch (error: any) {

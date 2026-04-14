@@ -2,10 +2,10 @@ import React from 'react';
 import { Document, Page, Text, View, StyleSheet, renderToStream } from '@react-pdf/renderer';
 
 const styles = StyleSheet.create({
-  page: { padding: 40, fontFamily: 'Times-Roman', fontSize: 12 },
-  headerText: { textAlign: 'center', fontSize: 14, fontFamily: 'Times-Bold' },
+  page: { padding: 40, fontFamily: 'Times-Roman', fontSize: 16 },
+  headerText: { textAlign: 'center', fontSize: 20, fontFamily: 'Times-Bold' },
   line: { borderBottomWidth: 2, borderBottomColor: '#000', marginVertical: 15 },
-  subheader: { textAlign: 'center', fontSize: 12, textDecoration: 'underline', fontFamily: 'Times-Bold', marginBottom: 5 },
+  subheader: { textAlign: 'center', fontSize: 18, textDecoration: 'underline', fontFamily: 'Times-Bold', marginBottom: 5 },
   resi: { textAlign: 'center', marginBottom: 30 },
   infoLabel: { width: 120 },
   infoValue: { flex: 1 },

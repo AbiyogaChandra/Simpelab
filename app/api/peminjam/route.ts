@@ -41,7 +41,7 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
     try {
         const data = await request.json();
-        
+
         const peminjam = await prisma.peminjam.create({
             data: {
                 kategori: data.kategori,
@@ -68,7 +68,7 @@ export async function PUT(request: Request) {
         if (!id) return NextResponse.json({ error: "No ID provided" }, { status: 400 });
 
         const data = await request.json();
-        
+
         const peminjam = await prisma.peminjam.update({
             where: { id },
             data: {
@@ -102,7 +102,7 @@ export async function DELETE(request: Request) {
                 select: { id_peminjam: true },
                 distinct: ['id_peminjam']
             });
-            const activePeminjamIds = activePengajuan.map(p => p.id_peminjam);
+            const activePeminjamIds = activePengajuan.map((p: any) => p.id_peminjam);
 
             // 1. Unlink aktivitas for purely historical wipe
             if (activePeminjamIds.length > 0) {
@@ -126,7 +126,7 @@ export async function DELETE(request: Request) {
                 where: { status: 'KEMBALI' },
                 select: { id: true }
             });
-            const inactivePengajuanIds = inactivePengajuan.map(p => p.id);
+            const inactivePengajuanIds = inactivePengajuan.map((p: any) => p.id);
 
             // 3. Wipe DetailProdukPengajuan (Lowest relation)
             if (inactivePengajuanIds.length > 0) {
@@ -166,7 +166,7 @@ export async function DELETE(request: Request) {
             // Check for history
             const pengajuanHistory = await prisma.pengajuan.count({ where: { id_peminjam: id } });
             if (pengajuanHistory > 0) {
-                 return NextResponse.json({ error: "Gagal menghapus! Peminjam ini memiliki riwayat transaksi/peminjaman." }, { status: 400 });
+                return NextResponse.json({ error: "Gagal menghapus! Peminjam ini memiliki riwayat transaksi/peminjaman." }, { status: 400 });
             }
 
             // Unlink explicitly if deleting manually

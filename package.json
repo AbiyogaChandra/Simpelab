@@ -16,7 +16,9 @@
     "db:admin": "tsx scripts/add_admin.ts"
   },
   "dependencies": {
+    "@libsql/client": "^0.17.2",
     "@prisma/adapter-better-sqlite3": "^7.3.0",
+    "@prisma/adapter-libsql": "^7.7.0",
     "@prisma/client": "^7.3.0",
     "@react-pdf/renderer": "^4.3.2",
     "bcrypt": "^6.0.0",

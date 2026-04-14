@@ -67,9 +67,9 @@ export async function GET(request: Request) {
             })
         ]);
 
-        const formattedAktivitas = aktivitas.map((item) => ({
+        const formattedAktivitas = aktivitas.map((item: any) => ({
             id: item.id,
-            tags: item.kategori.split(',').map(tag => tag.trim()), // "Buat, Detail Produk" -> ["Buat", "Produk"]
+            tags: item.kategori.split(',').map((tag: string) => tag.trim()), // "Buat, Detail Produk" -> ["Buat", "Produk"]
             message: item.keterangan,
             timestamp: new Date(item.waktu).toLocaleString('id-ID', {
                 day: '2-digit', month: 'short', year: 'numeric',

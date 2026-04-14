@@ -35,9 +35,9 @@ export async function GET() {
 
         const session = await getCurrentSession();
 
-        const formattedProduk = produk.map(p => {
+        const formattedProduk = produk.map((p: any) => {
             const stok = p.kategori === 'HP' ? p.kuantitas : p._count.detail_produk;
-            
+
             if (!session) {
                 return {
                     id: p.id,
@@ -45,7 +45,7 @@ export async function GET() {
                     stok
                 };
             }
-            
+
             return {
                 ...p,
                 stok
@@ -83,7 +83,7 @@ export async function POST(request: Request) {
         });
 
         if (existingProduk) {
-             return NextResponse.json(
+            return NextResponse.json(
                 { error: "Kode produk sudah digunakan" },
                 { status: 409 }
             );
@@ -153,7 +153,7 @@ export async function PUT(request: Request) {
         });
 
         if (existingProduk) {
-             return NextResponse.json(
+            return NextResponse.json(
                 { error: "Kode produk sudah digunakan" },
                 { status: 409 }
             );
