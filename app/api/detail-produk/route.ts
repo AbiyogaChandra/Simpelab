@@ -3,8 +3,7 @@ import { prisma } from "@lib/prisma";
 import { z } from "zod";
 import { logActivity } from "@/lib/activity";
 import { getCurrentSession } from "@/lib/auth";
-import { writeFile, mkdir } from "fs/promises";
-import path from "path";
+import { supabase } from "@/lib/supabase";
 
 const detailProdukSchema = z.object({
     id_produk: z.coerce.number().int().positive(),
@@ -43,19 +42,29 @@ async function parseRequest(request: Request) {
     }
 }
 
-/** Save an uploaded file to public/uploads/detail-produk/ and return the public URL path. */
+/** Save an uploaded file to Supabase Storage and return the public URL path. */
 async function saveFoto(file: File): Promise<string> {
-    const uploadDir = path.join(process.cwd(), "public", "uploads", "detail-produk");
-    await mkdir(uploadDir, { recursive: true });
-
     const ext = file.name.split(".").pop() ?? "jpg";
     const uniqueName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
-    const filePath = path.join(uploadDir, uniqueName);
+    const filePath = `detail-produk/${uniqueName}`;
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-    await writeFile(filePath, buffer);
+    const { error } = await supabase.storage
+        .from('uploads')
+        .upload(filePath, file, {
+            cacheControl: '3600',
+            upsert: false
+        });
 
-    return `/uploads/detail-produk/${uniqueName}`;
+    if (error) {
+        console.error("Supabase Upload Error:", error);
+        throw new Error("Failed to upload image to Supabase");
+    }
+
+    const { data } = supabase.storage
+        .from('uploads')
+        .getPublicUrl(filePath);
+
+    return data.publicUrl;
 }
 
 export async function GET(request: Request) {
