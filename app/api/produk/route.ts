@@ -6,9 +6,9 @@ import { getCurrentSession } from "@/lib/auth";
 
 const produkSchema = z.object({
     kategori: z.enum(["ASET", "HP"]),
-    // Enforce limits from schema: VARCHAR 50, 32, 50, 50, 100
+    // Enforce limits from schema: VARCHAR 50, 10, 50, 50, 100
     nama: z.string().min(1).max(50),
-    kode: z.string().min(1).max(32),
+    kode: z.string().min(1).max(10),
     merk: z.string().min(1).max(50),
     model: z.string().min(1).max(50),
     spesifikasi: z.string().min(1).max(100),

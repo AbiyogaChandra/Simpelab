@@ -11,7 +11,7 @@ const detailProdukSchema = z.object({
     id_lokasi: z.coerce.number().int().positive(),
     status: z.enum(["TERSEDIA", "DIPINJAM"]),
     kondisi: z.enum(["BAIK", "RUSAK"]),
-    kode_seri: z.string().nullable().optional().or(z.literal("")),
+    kode_seri: z.string().max(10).nullable().optional().or(z.literal("")),
     kode_scan: z.string().nullable().optional().or(z.literal("")),
 });
 

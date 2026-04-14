@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Sidebar from '@/components/Sidebar';
 import { useSearchParams, useRouter } from 'next/navigation';
 import QRCode from "react-qr-code";
+import DownloadableQRCode from "@/components/DownloadableQRCode";
 import PhotoPickerModal from "@/components/PhotoPickerModal";
 
 function CreateDetailProdukContent() {
@@ -133,10 +134,10 @@ function CreateDetailProdukContent() {
   };
 
 
-  /** Generate a random 32-char alphanumeric serial. Collision probability is negligible (62^32). */
+  /** Generate a random 10-char alphanumeric serial. Collision probability is negligible (62^10). */
   const generateSerial = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    return Array.from({ length: 32 }, () =>
+    return Array.from({ length: 10 }, () =>
       chars.charAt(Math.floor(Math.random() * chars.length))
     ).join('');
   };
@@ -757,11 +758,9 @@ function CreateDetailProdukContent() {
                 ) : getQRValue() ? (
                   <>
                     <div style={{ background: 'white', padding: '16px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
-                      <QRCode
+                      <DownloadableQRCode
                         value={getQRValue()}
-                        size={120}
-                        style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                        viewBox={`0 0 120 120`}
+                        displaySize={120}
                       />
                     </div>
                     {/* <p style={{
@@ -784,12 +783,10 @@ function CreateDetailProdukContent() {
                 ) : (
                   <>
                     <div style={{ background: 'white', padding: '14px', borderRadius: '12px', boxShadow: 'none', border: '2px dashed #e0e0e0' }}>
-                      <QRCode
+                      <DownloadableQRCode
                         value="PLACEHOLDER-QR-CODE"
-                        size={180}
+                        displaySize={180}
                         fgColor="#e0e0e0"
-                        style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                        viewBox={`0 0 256 256`}
                       />
                     </div>
                     <span style={{ marginTop: '16px', fontSize: '12px', color: '#999999', fontWeight: 500 }}>

@@ -14,7 +14,7 @@ const styles = StyleSheet.create({
   tableHeaderRow: { flexDirection: 'row', marginBottom: 15, fontFamily: 'Times-Bold' },
   tableDataRow: { flexDirection: 'row', marginBottom: 10 },
   colName: { flex: 1 },
-  colCode: { flex: 2, textAlign: 'left', fontSize: 10 },
+  colCode: { flex: 2, textAlign: 'left' },
   colQty: { width: 80, textAlign: 'center' },
   signatureContainer: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 20, marginTop: 30 },
   signatureBlock: { width: 150, textAlign: 'center' },

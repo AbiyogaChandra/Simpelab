@@ -97,7 +97,7 @@ model Produk {
   id             Int            @id @default(autoincrement())
   kategori       KategoriProduk
   nama           String // VARCHAR 50
-  kode           String // VARCHAR 32
+  kode           String // VARCHAR 10
   merk           String // VARCHAR 50
   model          String // VARCHAR 50
   spesifikasi    String // VARCHAR 100

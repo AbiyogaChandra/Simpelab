@@ -356,6 +356,7 @@ function CreateProdukContent() {
                   value={formData.kodeProduk}
                   onChange={handleChange}
                   placeholder="Contoh : FLS111"
+                  maxLength={10}
                   style={{
                     width: '100%',
                     padding: '12px 16px',

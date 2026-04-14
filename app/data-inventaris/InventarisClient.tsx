@@ -5,7 +5,7 @@ import * as XLSX from 'xlsx';
 import Link from 'next/link';
 import Sidebar from '@/components/Sidebar';
 import { useRouter, useSearchParams } from 'next/navigation';
-import QRCode from "react-qr-code";
+import DownloadableQRCode from "@/components/DownloadableQRCode";
 
 // Interfaces based on Prisma schema and API response
 interface Produk {
@@ -892,11 +892,9 @@ export default function DataInventarisPage() {
                 {selectedDetail.kode_scan ? (
                   <>
                     <div style={{ background: 'white', padding: '16px', borderRadius: '12px', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}>
-                      <QRCode
+                      <DownloadableQRCode
                         value={selectedDetail.kode_scan}
-                        size={120}
-                        style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                        viewBox={`0 0 256 256`}
+                        displaySize={120}
                       />
                     </div>
                     {/* <p style={{ marginTop: '12px', fontSize: '12px', fontWeight: 500, color: '#333' }}>{selectedDetail.kode_scan}</p> */}
@@ -904,12 +902,10 @@ export default function DataInventarisPage() {
                 ) : (
                   <>
                     <div style={{ background: 'white', padding: '14px', borderRadius: '12px', boxShadow: 'none', border: '2px dashed #e0e0e0' }}>
-                      <QRCode
+                      <DownloadableQRCode
                         value="PLACEHOLDER-QR-CODE"
-                        size={120}
+                        displaySize={120}
                         fgColor="#e0e0e0"
-                        style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                        viewBox={`0 0 256 256`}
                       />
                     </div>
                     <div style={{ width: '120px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#999', marginTop: '12px', fontSize: '12px' }}>No QR</div>
