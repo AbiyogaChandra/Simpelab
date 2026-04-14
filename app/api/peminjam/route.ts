@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@lib/prisma";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
@@ -14,8 +16,8 @@ export async function GET(request: Request) {
 
         const whereClause: any = {
             OR: [
-                { nama: { contains: query || "" } },
-                { nomor_induk: { contains: query || "" } },
+                { nama: { contains: query || "", mode: "insensitive" } },
+                { nomor_induk: { contains: query || "", mode: "insensitive" } },
             ],
         };
 
