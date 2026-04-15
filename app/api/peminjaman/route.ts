@@ -100,6 +100,8 @@ export async function PUT(request: Request) {
             return NextResponse.json({ error: "ID required" }, { status: 400 });
         }
 
+        const session = await getCurrentSession();
+
         const contentType = request.headers.get("content-type") ?? "";
         let body: any;
         let fotoFile: File | null = null;
@@ -194,7 +196,6 @@ export async function PUT(request: Request) {
                             });
 
                             // Log Activity for Detail Produk change
-                            const session = await getCurrentSession();
                             if (session) {
                                 await logActivity(
                                     tx as any, // Need to cast or pass prisma to logActivity if no tx support, but logActivity uses passed client
@@ -275,7 +276,6 @@ export async function PUT(request: Request) {
                     });
 
                     // Log Activity for Detail Produk return
-                    const session = await getCurrentSession();
                     if (session) {
                         await logActivity(
                             tx as any,
@@ -288,9 +288,8 @@ export async function PUT(request: Request) {
             }
 
             return updatedPengajuan;
-        });
+        }, { maxWait: 5000, timeout: 15000 });
 
-        const session = await getCurrentSession();
         await logActivity(
             prisma,
             "Ubah, Peminjaman",
